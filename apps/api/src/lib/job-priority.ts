@@ -1,4 +1,4 @@
-import { redisConnection } from "../../src/services/queue-service";
+import { getRedisConnection } from "../../src/services/queue-service";
 import { PlanType } from "../../src/types";
 import { Logger } from "./logger";
 
@@ -6,12 +6,13 @@ const SET_KEY_PREFIX = "limit_team_id:";
 export async function addJobPriority(team_id, job_id) {
   try {
     const setKey = SET_KEY_PREFIX + team_id;
+    const redis = getRedisConnection();
 
     // Add scrape job id to the set
-    await redisConnection.sadd(setKey, job_id);
+    await redis.sadd(setKey, job_id);
 
     // This approach will reset the expiration time to 60 seconds every time a new job is added to the set.
-    await redisConnection.expire(setKey, 60);
+    await redis.expire(setKey, 60);
   } catch (e) {
     Logger.error(`Add job priority (sadd) failed: ${team_id}, ${job_id}`);
   }
@@ -20,9 +21,10 @@ export async function addJobPriority(team_id, job_id) {
 export async function deleteJobPriority(team_id, job_id) {
   try {
     const setKey = SET_KEY_PREFIX + team_id;
+    const redis = getRedisConnection();
 
     // remove job_id from the set
-    await redisConnection.srem(setKey, job_id);
+    await redis.srem(setKey, job_id);
   } catch (e) {
     Logger.error(`Delete job priority (srem) failed: ${team_id}, ${job_id}`);
   }
@@ -39,9 +41,10 @@ export async function getJobPriority({
 }): Promise<number> {
   try {
     const setKey = SET_KEY_PREFIX + team_id;
+    const redis = getRedisConnection();
 
     // Get the length of the set
-    const setLength = await redisConnection.scard(setKey);
+    const setLength = await redis.scard(setKey);
 
     // Determine the priority based on the plan and set length
     let planModifier = 1;

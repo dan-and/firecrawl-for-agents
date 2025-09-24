@@ -2,7 +2,7 @@ import "dotenv/config";
 import { CustomError } from "../lib/custom-error";
 import {
   getScrapeQueue,
-  redisConnection,
+  getRedisConnection,
   scrapeQueueName,
 } from "./queue-service";
 import { logtail } from "./logtail";
@@ -83,7 +83,7 @@ const workerFun = async (
   processJobInternal: (token: string, job: Job) => Promise<any>,
 ) => {
   const worker = new Worker(queueName, null, {
-    connection: redisConnection,
+    connection: getRedisConnection(),
     lockDuration: 1 * 60 * 1000,
     stalledInterval: 30 * 1000,
     maxStalledCount: 10,
