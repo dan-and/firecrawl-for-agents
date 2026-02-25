@@ -472,7 +472,7 @@ export class WebScraperDataProvider {
     this.replaceAllPathsWithAbsolutePaths =
       options.crawlerOptions?.replaceAllPathsWithAbsolutePaths ??
       options.pageOptions?.replaceAllPathsWithAbsolutePaths ??
-      false;
+      true;
 
     if (typeof options.crawlerOptions?.excludes === "string") {
       this.excludes = options.crawlerOptions?.excludes

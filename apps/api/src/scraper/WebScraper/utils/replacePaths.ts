@@ -4,7 +4,8 @@ import { Document } from "../../../lib/entities";
 export const replacePathsWithAbsolutePaths = (documents: Document[]): Document[] => {
   try {
     documents.forEach((document) => {
-      const baseUrl = new URL(document.metadata.sourceURL).origin;
+      const origin = new URL(document.metadata.sourceURL).origin;
+      const sourceURL = document.metadata.sourceURL;
       const paths =
         document.content.match(
           /!?\[.*?\]\(.*?\)|href=".+?"/g
@@ -18,9 +19,10 @@ export const replacePathsWithAbsolutePaths = (documents: Document[]): Document[]
 
         if (!url.startsWith("data:") && !url.startsWith("http")) {
           if (url.startsWith("/")) {
-            url = url.substring(1);
+            url = new URL(url, origin).toString();
+          } else {
+            url = new URL(url, sourceURL).toString();
           }
-          url = new URL(url, baseUrl).toString();
         }
 
         const markdownLinkOrImageText = path.match(/(!?\[.*?\])/)[0];
