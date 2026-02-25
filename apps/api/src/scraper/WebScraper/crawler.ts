@@ -369,6 +369,7 @@ export class WebCrawler {
         url,
         {
           ...pageOptions,
+          includeMarkdown: false,
           includeRawHtml: true,
         },
         undefined,
