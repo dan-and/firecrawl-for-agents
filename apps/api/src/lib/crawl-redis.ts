@@ -14,8 +14,7 @@ export type StoredCrawl = {
 
 export async function saveCrawl(id: string, crawl: StoredCrawl) {
   const redis = getRedisConnection();
-  await redis.set("crawl:" + id, JSON.stringify(crawl));
-  await redis.expire("crawl:" + id, 24 * 60 * 60, "NX");
+  await redis.set("crawl:" + id, JSON.stringify(crawl), "EX", 24 * 60 * 60);
 }
 
 export async function getCrawl(id: string): Promise<StoredCrawl | null> {
@@ -40,30 +39,28 @@ export async function getCrawlExpiry(id: string): Promise<Date> {
 
 export async function addCrawlJob(id: string, job_id: string) {
   const redis = getRedisConnection();
-  await redis.sadd("crawl:" + id + ":jobs", job_id);
-  await redis.expire("crawl:" + id + ":jobs", 24 * 60 * 60, "NX");
+  const pipeline = redis.pipeline();
+  pipeline.sadd("crawl:" + id + ":jobs", job_id);
+  pipeline.expire("crawl:" + id + ":jobs", 24 * 60 * 60);
+  await pipeline.exec();
 }
 
 export async function addCrawlJobs(id: string, job_ids: string[]) {
   const redis = getRedisConnection();
-  await redis.sadd("crawl:" + id + ":jobs", ...job_ids);
-  await redis.expire("crawl:" + id + ":jobs", 24 * 60 * 60, "NX");
+  const pipeline = redis.pipeline();
+  pipeline.sadd("crawl:" + id + ":jobs", ...job_ids);
+  pipeline.expire("crawl:" + id + ":jobs", 24 * 60 * 60);
+  await pipeline.exec();
 }
 
 export async function addCrawlJobDone(id: string, job_id: string) {
   const redis = getRedisConnection();
-  await redis.sadd("crawl:" + id + ":jobs_done", job_id);
-  await redis.lpush("crawl:" + id + ":jobs_done_ordered", job_id);
-  await redis.expire(
-    "crawl:" + id + ":jobs_done",
-    24 * 60 * 60,
-    "NX",
-  );
-  await redis.expire(
-    "crawl:" + id + ":jobs_done_ordered",
-    24 * 60 * 60,
-    "NX",
-  );
+  const pipeline = redis.pipeline();
+  pipeline.sadd("crawl:" + id + ":jobs_done", job_id);
+  pipeline.lpush("crawl:" + id + ":jobs_done_ordered", job_id);
+  pipeline.expire("crawl:" + id + ":jobs_done", 24 * 60 * 60);
+  pipeline.expire("crawl:" + id + ":jobs_done_ordered", 24 * 60 * 60);
+  await pipeline.exec();
 }
 
 export async function getDoneJobsOrderedLength(id: string): Promise<number> {

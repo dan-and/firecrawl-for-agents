@@ -79,7 +79,7 @@ export const scrapeRequestSchema = scrapeOptions
 export type ScrapeRequest = z.infer<typeof scrapeRequestSchema>;
 
 export const bulkScrapeRequestSchema = scrapeOptions.extend({
-  urls: url.array(),
+  urls: url.array().min(1, "At least one URL is required"),
   origin: z.string().optional().default("api"),
 }).strict(strictMessage);
 

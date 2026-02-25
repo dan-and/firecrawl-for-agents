@@ -15,8 +15,16 @@ export async function getLinksFromSitemap({
     let content: string;
     try {
       const response = await axios.get(sitemapUrl, { timeout: axiosTimeout });
+      if (response.status === 404) {
+        Logger.warn(`Sitemap not found (404): ${sitemapUrl}`);
+        return allUrls;
+      }
       content = response.data;
     } catch (error) {
+      if (error.response?.status === 404) {
+        Logger.warn(`Sitemap not found (404): ${sitemapUrl}`);
+        return allUrls;
+      }
       Logger.error(`Request failed for ${sitemapUrl}: ${error.message}`);
 
       return allUrls;

@@ -14,8 +14,8 @@ export class WebCrawler {
   private crawlId: string;
   private initialUrl: string;
   private baseUrl: string;
-  private includes: string[];
-  private excludes: string[];
+  protected includes: string[];
+  protected excludes: string[];
   private maxCrawledLinks: number;
   private maxCrawledDepth: number;
   private visited: Set<string> = new Set();
@@ -59,6 +59,11 @@ export class WebCrawler {
     this.maxCrawledDepth = maxCrawledDepth ?? 10;
     this.allowExternalLinks = allowExternalLinks ?? false;
     this.crawlId = crawlId;
+  }
+
+  public setBaseUrl(newBase: string): void {
+    this.baseUrl = newBase;
+    this.robotsTxtUrl = `${this.baseUrl}${this.baseUrl.endsWith("/") ? "" : "/"}robots.txt`;
   }
 
   public async getRobotsTxt(): Promise<string> {
@@ -231,8 +236,33 @@ export class WebCrawler {
       return null;
     }
 
-    if (fullUrl.includes("#")) return null;
+    if (fullUrl.includes("#")) {
+      let urlObj2: URL;
+      try {
+        urlObj2 = new URL(fullUrl);
+      } catch (_) {
+        return null;
+      }
+      const hash = urlObj2.hash;
+      if (!hash || hash.length <= 2 || (!hash.startsWith("#/") && !hash.startsWith("#!/"))) {
+        return null;
+      }
+    }
     if (this.isFile(fullUrl)) return null;
+
+    // Reject any non-HTTP(S) protocol immediately
+    const NON_WEB_PROTOCOLS = [
+      "mailto:",
+      "tel:",
+      "telnet:",
+      "ftp:",
+      "ftps:",
+      "ssh:",
+      "file:",
+    ];
+    if (NON_WEB_PROTOCOLS.some(proto => fullUrl.startsWith(proto))) {
+      return null;
+    }
 
     // INTERNAL LINKS
     if (
@@ -252,18 +282,27 @@ export class WebCrawler {
       return fullUrl;
     }
 
-    Logger.info(
-      `Link filtered out: ${fullUrl} with tests: isInternalLink: ${this.isInternalLink(
-        fullUrl
-      )}, allowExternalLinks: ${
-        this.allowExternalLinks
-      }, isSocialMediaOrEmail: ${this.isSocialMediaOrEmail(
-        fullUrl
-      )}, matchesExcludes: ${this.matchesExcludes(
-        fullUrl
-      )}, matchesIncludes: ${this.matchesIncludes(fullUrl)}`
-    );
+    Logger.info(`Link filtered: ${fullUrl} — ${this.getFilterReason(fullUrl)}`);
     return null;
+  }
+
+  private getFilterReason(fullUrl: string): string {
+    let filterReason: string;
+    if (!this.isInternalLink(fullUrl) && !this.allowExternalLinks) {
+      filterReason = `URL is on a different domain (${new URL(fullUrl).hostname}) and allowExternalLinks is not enabled.`;
+    } else if (this.isSocialMediaOrEmail(fullUrl)) {
+      filterReason = "URL is a social media or email link and is skipped automatically.";
+    } else if (this.matchesExcludes(fullUrl)) {
+      const matchedExclude = this.excludes.find(p => {
+        try { return new RegExp(p).test(fullUrl); } catch { return false; }
+      });
+      filterReason = `URL matches excludePaths pattern "${matchedExclude ?? "unknown"}". Adjust excludePaths if this URL should be crawled.`;
+    } else if (!this.matchesIncludes(fullUrl)) {
+      filterReason = `URL does not match any includePaths pattern [${this.includes.map(p => `"${p}"`).join(", ")}]. Add a matching pattern to includePaths or remove the restriction.`;
+    } else {
+      filterReason = "URL was filtered for an unspecified reason.";
+    }
+    return filterReason;
   }
 
   public extractLinksFromHTML(html: string, pageUrl: string) {

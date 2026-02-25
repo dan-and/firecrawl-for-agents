@@ -110,7 +110,7 @@ export async function crawlStatusController(req: RequestWithAuth<CrawlStatusPara
 
   const data = doneJobs.map(x => x.returnvalue);
 
-  const protocol = process.env.ENV === "local" ? req.protocol : "https";
+  const protocol = req.protocol;
   const nextURL = new URL(`${protocol}://${req.get("host")}/v1/crawl/${req.params.jobId}`);
 
   nextURL.searchParams.set("skip", (start + data.length).toString());

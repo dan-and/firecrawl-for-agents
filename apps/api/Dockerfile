@@ -1,4 +1,4 @@
-FROM node:20-slim AS base
+FROM node:22-slim AS base
 
 # Create app directory
 WORKDIR /app
@@ -19,6 +19,7 @@ RUN apt-get update -qq && \
     ca-certificates \
     git \
     golang-go \
+    python3 \
     && update-ca-certificates
 
 # Copy the rest of the application

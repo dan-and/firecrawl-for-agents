@@ -89,7 +89,14 @@ export async function bulkScrapeController(
   );
   await getScrapeQueue().addBulk(jobs);
 
-  const protocol = process.env.ENV === "local" ? req.protocol : "https";
+  const protocol = req.protocol;
+
+  if (req.body.urls.length === 0) {
+    return res.status(400).json({
+      success: false,
+      error: "No valid URLs provided after filtering",
+    });
+  }
   
   return res.status(200).json({
     success: true,

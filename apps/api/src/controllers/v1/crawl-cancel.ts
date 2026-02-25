@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { authenticateUser } from "../auth";
 import { RateLimiterMode } from "../../types";
 import { Logger } from "../../lib/logger";
-import { getCrawl, saveCrawl } from "../../lib/crawl-redis";
+import { getCrawl, saveCrawl, isCrawlFinishedLocked } from "../../lib/crawl-redis";
 import { configDotenv } from "dotenv";
 configDotenv();
 
@@ -46,6 +46,11 @@ export async function crawlCancelController(req: Request, res: Response) {
     const sc = await getCrawl(req.params.jobId);
     if (!sc) {
       return res.status(404).json({ error: "Job not found" });
+    }
+
+    const alreadyFinished = await isCrawlFinishedLocked(req.params.jobId);
+    if (alreadyFinished) {
+      return res.status(409).json({ error: "Crawl job is already completed" });
     }
 
     try {

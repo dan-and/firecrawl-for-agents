@@ -73,10 +73,17 @@ const processJobInternal = async (token: string, job: Job) => {
 
 let isShuttingDown = false;
 
-process.on("SIGINT", () => {
-  Logger.info("Received SIGINT. Shutting down gracefully...");
-  isShuttingDown = true;
-});
+if (require.main === module) {
+  process.on("SIGINT", () => {
+    Logger.info("Received SIGINT. Shutting down gracefully...");
+    isShuttingDown = true;
+  });
+
+  process.on("SIGTERM", () => {
+    Logger.info("Received SIGTERM. Shutting down gracefully...");
+    isShuttingDown = true;
+  });
+}
 
 const workerFun = async (
   queueName: string,
