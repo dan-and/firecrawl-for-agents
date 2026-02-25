@@ -8,7 +8,7 @@ import {
   defaultCrawlerOptions,
   defaultOrigin,
 } from "../../../src/lib/default-values";
-import { v4 as uuidv4 } from "uuid";
+import { v7 as uuidv7 } from "uuid";
 import { Logger } from "../../../src/lib/logger";
 import {
   addCrawlJob,
@@ -84,7 +84,7 @@ export async function crawlController(req: Request, res: Response) {
         .json({ error: e.message ?? e });
     }
 
-    const id = uuidv4();
+    const id = uuidv7();
 
     const sc: StoredCrawl = {
       originUrl: url,
@@ -120,7 +120,7 @@ export async function crawlController(req: Request, res: Response) {
         Logger.debug(`Adding job from sitemap for ${x.url}`);
 
         const url = x.url;
-        const uuid = uuidv4();
+        const uuid = uuidv7();
         return {
           name: uuid,
           data: {
@@ -167,7 +167,7 @@ export async function crawlController(req: Request, res: Response) {
         {
           priority: 15, // prioritize request 0 of crawl jobs same as scrape jobs
         },
-        uuidv4(),
+        uuidv7(),
         10
       );
       await addCrawlJob(id, job.id);

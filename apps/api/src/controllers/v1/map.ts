@@ -1,5 +1,5 @@
 import { Response } from "express";
-import { v4 as uuidv4 } from "uuid";
+import { v7 as uuidv7 } from "uuid";
 import {
   legacyCrawlerOptions,
   mapRequestSchema,
@@ -61,7 +61,7 @@ export async function mapController(
 
   const limit: number = req.body.limit ?? 5000;
 
-  const id = uuidv4();
+  const id = uuidv7();
   let links: string[] = [req.body.url];
 
   const sc: StoredCrawl = {

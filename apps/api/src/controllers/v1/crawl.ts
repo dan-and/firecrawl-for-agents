@@ -1,5 +1,5 @@
 import { Response } from "express";
-import { v4 as uuidv4 } from "uuid";
+import { v7 as uuidv7 } from "uuid";
 import {
   CrawlRequest,
   crawlRequestSchema,
@@ -98,7 +98,7 @@ export async function crawlController(
     plan: req.auth.plan 
   });
 
-  const id = uuidv4();
+  const id = uuidv7();
 
   const crawlerOptions = legacyCrawlerOptions(req.body);
   const pageOptions = legacyScrapeOptions(req.body.scrapeOptions);
@@ -175,7 +175,7 @@ export async function crawlController(
     }
     const jobs = limitedSitemap.map((x) => {
       const url = x.url;
-      const uuid = uuidv4();
+      const uuid = uuidv7();
       return {
         name: uuid,
         data: {
@@ -226,7 +226,7 @@ export async function crawlController(
       {
         priority: 15,
       },
-      uuidv4(),
+      uuidv7(),
       10
     );
     await addCrawlJob(id, job.id);

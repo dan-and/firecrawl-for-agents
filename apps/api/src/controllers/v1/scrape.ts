@@ -8,7 +8,7 @@ import {
   scrapeRequestSchema,
   ScrapeResponse,
 } from "./types";
-import { v4 as uuidv4 } from "uuid";
+import { v7 as uuidv7 } from "uuid";
 import { addScrapeJobRaw, waitForJob } from "../../services/queue-jobs";
 import { getJobPriority } from "../../lib/job-priority";
 import { PlanType } from "../../types";
@@ -62,7 +62,7 @@ export async function scrapeController(
   const origin = req.body.origin;
   const timeout = req.body.timeout;
   const pageOptions = legacyScrapeOptions(req.body);
-  const jobId = uuidv4();
+  const jobId = uuidv7();
 
   const jobPriority = await getJobPriority({
     plan: req.auth.plan as PlanType,

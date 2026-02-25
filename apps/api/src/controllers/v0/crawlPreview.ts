@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { authenticateUser } from "../auth";
 import { RateLimiterMode } from "../../../src/types";
-import { v4 as uuidv4 } from "uuid";
+import { v7 as uuidv7 } from "uuid";
 import { Logger } from "../../../src/lib/logger";
 import {
   addCrawlJob,
@@ -46,7 +46,7 @@ export async function crawlPreviewController(req: Request, res: Response) {
       removeTags: [],
     };
 
-    const id = uuidv4();
+    const id = uuidv7();
 
     let robots;
 
@@ -88,7 +88,7 @@ export async function crawlPreviewController(req: Request, res: Response) {
             sitemapped: true,
           },
           {},
-          uuidv4(),
+          uuidv7(),
           10
         );
         await addCrawlJob(id, job.id);
@@ -106,7 +106,7 @@ export async function crawlPreviewController(req: Request, res: Response) {
           crawl_id: id,
         },
         {},
-        uuidv4(),
+        uuidv7(),
         10
       );
       await addCrawlJob(id, job.id);

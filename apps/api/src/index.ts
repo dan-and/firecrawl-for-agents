@@ -14,7 +14,7 @@ import { v1Router } from "./routes/v1";
 import expressWs from "express-ws";
 import { ErrorResponse, ResponseWithSentry } from "./controllers/v1/types";
 import { ZodError } from "zod";
-import { v4 as uuidv4 } from "uuid";
+import { v7 as uuidv7 } from "uuid";
 import { setupOpenAPI } from "./openapi";
 
 const numCPUs = process.env.ENV === "local" ? 2 : os.cpus().length;
@@ -166,7 +166,7 @@ if (cluster.isPrimary) {
           .json({ success: false, error: "Bad request, malformed JSON" });
       }
 
-      const id = res.sentry ?? uuidv4();
+      const id = res.sentry ?? uuidv7();
       let verbose = JSON.stringify(err);
       if (verbose === "{}") {
         if (err instanceof Error) {

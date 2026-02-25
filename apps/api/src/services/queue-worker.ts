@@ -10,7 +10,7 @@ import { startWebScraperPipeline } from "../main/runWebScraper";
 import { Logger } from "../lib/logger";
 import { Job, Worker } from "bullmq";
 import systemMonitor from "./system-monitor";
-import { v4 as uuidv4 } from "uuid";
+import { v7 as uuidv7 } from "uuid";
 import {
   addCrawlJob,
   addCrawlJobDone,
@@ -105,7 +105,7 @@ const workerFun = async (
       Logger.info("No longer accepting new jobs. SIGINT");
       break;
     }
-    const token = uuidv4();
+    const token = uuidv7();
     const canAcceptConnection = await monitor.acceptConnection();
     if (!canAcceptConnection) {
       Logger.warn("Cannot accept connection");
@@ -230,7 +230,7 @@ async function processJob(job: Job, token: string) {
                   v1: job.data.v1,
                 },
                 {},
-                uuidv4(),
+                uuidv7(),
                 jobPriority,
               );
 

@@ -1,6 +1,6 @@
 import { crawlController } from '../v0/crawl'
 import { Request, Response } from 'express';
-import { v4 as uuidv4 } from 'uuid';
+import { v7 as uuidv7 } from 'uuid';
 
 jest.mock('../auth', () => ({
   authenticateUser: jest.fn().mockResolvedValue({
@@ -17,7 +17,7 @@ describe('crawlController', () => {
   it('should prevent duplicate requests using the same idempotency key', async () => {
     const req = {
       headers: {
-        'x-idempotency-key': await uuidv4(),
+        'x-idempotency-key': await uuidv7(),
         'Authorization': `Bearer ${process.env.TEST_API_KEY}`
       },
       body: {

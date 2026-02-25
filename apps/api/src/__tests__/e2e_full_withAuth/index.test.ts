@@ -1,6 +1,6 @@
 import request from "supertest";
 import dotenv from "dotenv";
-import { v4 as uuidv4 } from "uuid";
+import { v7 as uuidv7 } from "uuid";
 
 dotenv.config();
 

@@ -1,5 +1,5 @@
 import { Response } from "express";
-import { v4 as uuidv4 } from "uuid";
+import { v7 as uuidv7 } from "uuid";
 import {
   BulkScrapeRequest,
   bulkScrapeRequestSchema,
@@ -23,7 +23,7 @@ export async function bulkScrapeController(
 ) {
   req.body = bulkScrapeRequestSchema.parse(req.body);
 
-  const id = uuidv4();
+  const id = uuidv7();
 
   // await logCrawl(id, req.auth.team_id);
 
@@ -56,7 +56,7 @@ export async function bulkScrapeController(
   }
 
   const jobs = req.body.urls.map((x) => {
-    const uuid = uuidv4();
+    const uuid = uuidv7();
     return {
       name: uuid,
       data: {

@@ -9,7 +9,7 @@ import {
   defaultOrigin,
 } from "../../lib/default-values";
 import { addScrapeJobRaw, waitForJob } from "../../services/queue-jobs";
-import { v4 as uuidv4 } from "uuid";
+import { v7 as uuidv7 } from "uuid";
 import { Logger } from "../../lib/logger";
 import { getJobPriority } from "../../lib/job-priority";
 
@@ -124,7 +124,7 @@ export async function scrapeController(req: Request, res: Response) {
     const pageOptions = { ...defaultPageOptions, ...req.body.pageOptions };
     let timeout = req.body.timeout ?? defaultTimeout;
 
-    const jobId = uuidv4();
+    const jobId = uuidv7();
 
     const result = await scrapeHelper(
       jobId,

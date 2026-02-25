@@ -1,0 +1,107 @@
+name: firecrawl
+
+x-common-service: &common-service
+  build: apps/api
+  ulimits:
+    nofile:
+      soft: 1048576
+      hard: 1048576
+  networks:
+    - backend
+    - traefik-servicenet
+  environment:
+    - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+    - REDIS_RATE_LIMIT_URL=${REDIS_URL:-redis://redis:6379}
+    - PLAYWRIGHT_MICROSERVICE_URL=${PLAYWRIGHT_MICROSERVICE_URL:-http://playwright-service:3000}
+    - PORT=${PORT:-3002}
+    - NUM_WORKERS_PER_QUEUE=${NUM_WORKERS_PER_QUEUE}
+    - BULL_AUTH_KEY=${BULL_AUTH_KEY}
+    - TEST_API_KEY=${TEST_API_KEY}
+    - HOST=${HOST:-0.0.0.0}
+    - LOGGING_LEVEL=${LOGGING_LEVEL}
+    - MAX_RAM=${MAX_RAM:-0.95}
+    - MAX_CPU=${MAX_CPU:-0.95}
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+
+services:
+  puppeteer-service:
+    image: trieve/puppeteer-service-ts:v0.0.13
+    build:
+      context: ./apps/puppeteer-service-ts/
+      dockerfile: Dockerfile
+    ulimits:
+      nofile:
+        soft: 1048576
+        hard: 1048576
+    environment:
+      - PORT=3000
+      - PROXY_SERVER=${PROXY_SERVER}
+      - PROXY_USERNAME=${PROXY_USERNAME}
+      - PROXY_PASSWORD=${PROXY_PASSWORD}
+      - TWOCAPTCHA_TOKEN=${TWOCAPTCHA_TOKEN}
+      - MAX_CONCURRENCY=${MAX_CONCURRENCY}
+    networks:
+      - backend
+      - traefik-servicenet
+
+  api:
+    <<: *common-service
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=docker-proxynet
+      - traefik.http.routers.firecrawl.rule=Host(`${SUBDOMAIN}.${DOMAIN_NAME}`)
+      - traefik.http.routers.firecrawl.tls=true
+      - traefik.http.routers.firecrawl.entrypoints=web,web-secure
+      - traefik.http.routers.firecrawl.tls.certresolver=tlschallenge
+      - traefik.http.middlewares.firecrawl.plugin.headerauthentication.header.name="Authorization"
+      - traefik.http.middlewares.firecrawl.plugin.headerauthentication.header.key="Bearer ${BEARER_TOKEN}"
+      - traefik.http.middlewares.firecrawl.headers.SSLRedirect=true
+      - traefik.http.middlewares.firecrawl.headers.STSSeconds=315360000
+      - traefik.http.middlewares.firecrawl.headers.browserXSSFilter=true
+      - traefik.http.middlewares.firecrawl.headers.contentTypeNosniff=true
+      - traefik.http.middlewares.firecrawl.headers.forceSTSHeader=true
+      - traefik.http.middlewares.firecrawl.headers.SSLHost=${DOMAIN_NAME}
+      - traefik.http.middlewares.firecrawl.headers.STSIncludeSubdomains=true
+      - traefik.http.middlewares.firecrawl.headers.STSPreload=true
+      - traefik.http.routers.firecrawl.middlewares=firecrawl@docker
+      - traefik.http.services.firecrawl.loadbalancer.server.port=3002
+
+    depends_on:
+      - redis
+      - puppeteer-service
+    ports:
+      - "127.0.0.1:3002:3002"
+    command: ["pnpm", "run", "start:production"]
+    networks:
+      - backend
+      - traefik-servicenet
+      - docker-proxynet
+
+  worker:
+    <<: *common-service
+    depends_on:
+      - redis
+      - puppeteer-service
+      - api
+    deploy:
+      replicas: 2
+    command: ["pnpm", "run", "workers"]
+
+  redis:
+    image: redis:alpine
+    networks:
+      - backend
+      - traefik-servicenet
+    command: redis-server --bind 0.0.0.0
+
+networks:
+  backend:
+    driver: bridge
+  docker-proxynet:
+     driver: bridge
+     internal: true
+     name: docker-proxynet
+  traefik-servicenet:
+     external: true           # this network has to be created once before starting:
+     name: traefik-servicenet
