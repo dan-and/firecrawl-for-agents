@@ -508,6 +508,53 @@ describe("POST /v1/map", () => {
     expect(response.body).toHaveProperty("success", false);
     expect(response.body).toHaveProperty("error");
   });
+
+  it.concurrent("accepts ignoreCache: true without error", async () => {
+    const mapRequest = {
+      url: "https://roastmywebsite.ai",
+      ignoreCache: true,
+    };
+
+    const response: ScrapeResponseRequestTest = await request(TEST_URL)
+      .post("/v1/map")
+      .set("Authorization", `Bearer ${process.env.TEST_API_KEY}`)
+      .set("Content-Type", "application/json")
+      .send(mapRequest);
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toHaveProperty("success", true);
+    expect(response.body).toHaveProperty("links");
+  });
+
+  it.concurrent("accepts ignoreCache: false (default) without error", async () => {
+    const mapRequest = {
+      url: "https://roastmywebsite.ai",
+      ignoreCache: false,
+    };
+
+    const response: ScrapeResponseRequestTest = await request(TEST_URL)
+      .post("/v1/map")
+      .set("Authorization", `Bearer ${process.env.TEST_API_KEY}`)
+      .set("Content-Type", "application/json")
+      .send(mapRequest);
+
+    expect(response.statusCode).toBe(200);
+  });
+
+  it.concurrent("rejects unknown fields (strict schema still works)", async () => {
+    const mapRequest = {
+      url: "https://example.com",
+      unknownField: true,
+    };
+
+    const response: ScrapeResponseRequestTest = await request(TEST_URL)
+      .post("/v1/map")
+      .set("Authorization", `Bearer ${process.env.TEST_API_KEY}`)
+      .set("Content-Type", "application/json")
+      .send(mapRequest);
+
+    expect(response.statusCode).toBe(400);
+  });
 });
 
 

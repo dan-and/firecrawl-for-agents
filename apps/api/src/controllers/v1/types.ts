@@ -115,6 +115,7 @@ export const mapRequestSchema = crawlerOptions
     includeSubdomains: z.boolean().default(true),
     search: z.string().optional(),
     ignoreSitemap: z.boolean().default(true),
+    ignoreCache: z.boolean().default(false),
     limit: z.number().min(1).max(5000).default(5000).optional(),
   })
   .strict(strictMessage);

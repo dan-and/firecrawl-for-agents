@@ -8,6 +8,7 @@ import {
 import { crawlToCrawler, StoredCrawl } from "../../lib/crawl-redis";
 import { MapResponse, MapRequest } from "./types";
 import { configDotenv } from "dotenv";
+import { Logger } from "../../lib/logger";
 import {
   checkAndUpdateURLForMap,
   isSameDomain,
@@ -60,6 +61,13 @@ export async function mapController(
   req.body = mapRequestSchema.parse(req.body);
 
   const limit: number = req.body.limit ?? 5000;
+  const ignoreCache: boolean = req.body.ignoreCache ?? false;
+
+  if (ignoreCache) {
+    Logger.debug(
+      `/map: ignoreCache=true — bypassing any URL cache for ${req.body.url}`
+    );
+  }
 
   const id = uuidv7();
   let links: string[] = [req.body.url];
