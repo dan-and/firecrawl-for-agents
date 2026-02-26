@@ -295,9 +295,15 @@ export class WebScraperDataProvider {
   private async processDocumentsWithCache(
     inProgress?: (progress: Progress) => void,
   ): Promise<Document[]> {
-    let documents = await this.getCachedDocuments(
-      this.urls.slice(0, this.limit),
-    );
+    // Screenshots are time-sensitive — never serve a cached screenshot
+    const skipCache =
+      this.pageOptions?.screenshot === true ||
+      this.pageOptions?.fullPageScreenshot === true;
+    let documents: Document[] = skipCache
+      ? []
+      : await this.getCachedDocuments(
+          this.urls.slice(0, this.limit),
+        );
     if (documents.length < this.limit) {
       const newDocuments: Document[] = await this.getDocuments(
         false,
