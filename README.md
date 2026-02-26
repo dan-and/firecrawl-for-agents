@@ -64,6 +64,7 @@ services:
       - REDIS_URL=${FIRECRAWL_REDIS_URL:-redis://redis:6379}
       - REDIS_RATE_LIMIT_URL=${FIRECRAWL_REDIS_URL:-redis://redis:6379}
       - PLAYWRIGHT_MICROSERVICE_URL=${PLAYWRIGHT_MICROSERVICE_URL:-http://playwright-service:3000}
+      - TLS_CLIENT_ENABLED=${TLS_CLIENT_ENABLED:-true}
       - PORT=${PORT:-3002}
       - NUM_WORKERS_PER_QUEUE=${NUM_WORKERS_PER_QUEUE}
       - BULL_AUTH_KEY=${BULL_AUTH_KEY}
@@ -88,6 +89,7 @@ services:
       - REDIS_URL=${FIRECRAWL_REDIS_URL:-redis://redis:6379}
       - REDIS_RATE_LIMIT_URL=${FIRECRAWL_REDIS_URL:-redis://redis:6379}
       - PLAYWRIGHT_MICROSERVICE_URL=${PLAYWRIGHT_MICROSERVICE_URL:-http://playwright-service:3000}
+      - TLS_CLIENT_ENABLED=${TLS_CLIENT_ENABLED:-true}
       - PORT=${PORT:-3002}
       - NUM_WORKERS_PER_QUEUE=${NUM_WORKERS_PER_QUEUE}
       - BULL_AUTH_KEY=${BULL_AUTH_KEY}
@@ -127,13 +129,33 @@ Firecrawl simple works as follows:
 4. URL's which have not already been scraped and match the `include` and `exclude` criteria from the HTML received from the scrape get added to the queue from each worker
 5. Steps 2-4 continue until no new links are found or the `limit` specified on the crawl is reached
 
+### Scraper Technologies
+
+Firecrawl Simple uses a three-tier scraping fallback system to maximize success rate while minimizing resource usage:
+
+| Scraper Name | Technology | Description | When Used |
+|---------------|------------|-------------|------------|
+| **fetch** | `undici.request()` (Node.js 22+) | Plain HTTP/HTTPS requests using Node's internal HTTP client. 3-4x faster than axios. | Static HTML pages, sites without bot protection. **First attempt** in fallback chain. |
+| **tls-client** | **CycleTLS** (Go subprocess) | TLS fingerprinting that makes HTTPS requests appear as Chrome browser. Bypasses ~60-80% of bot protection (Cloudflare, Akamai, DataDome). | Sites that block plain HTTP but don't require full JavaScript execution. **Second attempt** when `TLS_CLIENT_ENABLED=true`. |
+| **playwright** | **Hero** (`@ulixee/hero`) | Full headless Chromium browser with JavaScript execution and stealth capabilities. | JS-rendered pages, sites requiring browser automation. **Last resort** in fallback chain. |
+
+**Fallback Order:** fetch → tls-client → playwright
+
+**Important Notes:**
+- The term "fetch" refers to undici's HTTP client, not the browser `fetch()` API
+- The term "playwright" is a legacy name - we actually use `@ulixee/hero`, not Playwright
+- `tls-client` is optional and opt-in via `TLS_CLIENT_ENABLED=true` environment variable (default: true)
+- Each scraper is tried sequentially; if one succeeds (≥100 chars content or screenshot), the loop breaks
+
 ### Scaling concerns
 
 Your scaling bottlenecks will be the following in-order:
 
-1. `MAX_CONCURRENCY` (number of headless puppeteer browsers) on each of the `playwright-service`
-2. Actual number of `playwright-service`'s you have behind your load-balancer
-3. Number of `firecrawl-worker`'s you have (very rarely the case this is your bottleneck)
+1. `MAX_CONCURRENCY` (number of Hero browser instances) on each of the `playwright-service` service
+2. Actual number of `playwright-service` containers you have behind your load-balancer
+3. Number of `firecrawl-worker` containers you have (very rarely the case this is your bottleneck)
+
+Note: While the service is named `playwright-service`, it actually runs `@ulixee/hero` (a full headless browser), not Playwright. The naming is a legacy artifact from before the Hero migration.
 
 ### Crawling
 

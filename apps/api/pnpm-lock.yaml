@@ -46,6 +46,9 @@ importers:
       cors:
         specifier: ^2.8.5
         version: 2.8.5
+      cycletls:
+        specifier: ^2.0.5
+        version: 2.0.5
       dotenv:
         specifier: ^16.3.1
         version: 16.6.1
@@ -990,6 +993,10 @@ packages:
   css-what@6.2.2:
     resolution: {integrity: sha512-u/O3vwbptzhMs3L1fQE82ZSLHQQfto5gyZzwteVIEyeaY5Fc7R4dapF/BvRoSYFeqfBk4m0V1Vafq5Pjv25wvA==}
     engines: {node: '>= 6'}
+
+  cycletls@2.0.5:
+    resolution: {integrity: sha512-Nud94JBPZu1JTXWJ1GpIoQNR1xxU84WYt7G0dxzwpUe1xAAs6YbihvlQhIhPv9xljjonINJfWPFaeb8Ex1wLhQ==}
+    engines: {node: '>=18.0.0'}
 
   data-uri-to-buffer@6.0.2:
     resolution: {integrity: sha512-7hvf7/GW8e86rW0ptuwS3OcBGDjIi6SZva7hCyWC0yYry2cOPmLIjXAUHI6DK2HsnwJd9ifmt57i8eV2n4YNpw==}
@@ -3558,6 +3565,15 @@ snapshots:
       nth-check: 2.1.1
 
   css-what@6.2.2: {}
+
+  cycletls@2.0.5:
+    dependencies:
+      '@types/node': 20.19.17
+      form-data: 4.0.5
+      ws: 8.18.3
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
 
   data-uri-to-buffer@6.0.2: {}
 

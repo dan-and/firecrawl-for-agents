@@ -7,6 +7,7 @@ import { urlSpecificParams } from "./utils/custom/website_params";
 import { removeUnwantedElements } from "./utils/removeUnwantedElements";
 import { scrapeWithFetch } from "./scrapers/fetch";
 import { scrapeWithPlaywright } from "./scrapers/playwright";
+import { scrapeWithTlsClient, shutdownTlsClient } from "./scrapers/tls-client";
 import { extractLinks } from "./utils/utils";
 import { Logger } from "../../lib/logger";
 import { clientSideError } from "../../strings";
@@ -52,7 +53,7 @@ export const callWebhook = async (
   }
 };
 
-export const baseScrapers = ["playwright", "fetch"].filter(Boolean);
+export const baseScrapers = ["playwright", "fetch", "tls-client"].filter(Boolean);
 
 export async function generateRequestParams(
   url: string,
@@ -93,12 +94,14 @@ function getScrapingFallbackOrder(defaultScraper?: string) {
     switch (scraper) {
       case "playwright":
         return !!process.env.PLAYWRIGHT_MICROSERVICE_URL;
+      case "tls-client":
+        return process.env.TLS_CLIENT_ENABLED === "true";
       default:
         return true;
     }
   });
 
-  let defaultOrder = ["fetch", "playwright"].filter(Boolean);
+  let defaultOrder = ["fetch", "tls-client", "playwright"].filter(Boolean);
 
   const filteredDefaultOrder = defaultOrder.filter(
     (scraper: (typeof baseScrapers)[number]) =>
@@ -170,12 +173,20 @@ export async function scrapeSingleUrl(
           scraperResponse.metadata.pageError = response.pageError;
         }
         break;
-      case "fetch":
+      case "tls-client": {
+        const response = await scrapeWithTlsClient(url);
+        scraperResponse.text = response.content;
+        scraperResponse.metadata.pageStatusCode = response.pageStatusCode;
+        scraperResponse.metadata.pageError = response.pageError;
+        break;
+      }
+      case "fetch": {
         const response = await scrapeWithFetch(url);
         scraperResponse.text = response.content;
         scraperResponse.metadata.pageStatusCode = response.pageStatusCode;
         scraperResponse.metadata.pageError = response.pageError;
         break;
+      }
     }
 
     let cleanedHtml = removeUnwantedElements(scraperResponse.text, pageOptions);
