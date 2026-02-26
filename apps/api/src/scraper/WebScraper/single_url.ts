@@ -11,6 +11,7 @@ import { scrapeWithTlsClient, shutdownTlsClient } from "./scrapers/tls-client";
 import { extractLinks } from "./utils/utils";
 import { Logger } from "../../lib/logger";
 import { clientSideError } from "../../strings";
+import { rewriteUrl } from "../../lib/rewriteUrl";
 import axios from "axios";
 
 dotenv.config();
@@ -149,6 +150,11 @@ export async function scrapeSingleUrl(
   }
 
   urlToScrape = urlToScrape.trim();
+  const rewritten = rewriteUrl(urlToScrape);
+  if (rewritten) {
+    Logger.debug(`Rewriting URL: ${urlToScrape} → ${rewritten}`);
+    urlToScrape = rewritten;
+  }
 
   const attemptScraping = async (
     url: string,

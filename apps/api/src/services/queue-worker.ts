@@ -30,7 +30,8 @@ import {
 import { PlanType } from "../types";
 import { getJobs } from "../../src/controllers/v1/crawl-status";
 import { configDotenv } from "dotenv";
-import { callWebhook, shutdownTlsClient } from "../../src/scraper/WebScraper/single_url";
+import { callWebhook } from "../../src/scraper/WebScraper/single_url";
+import { shutdownTlsClient } from "../../src/scraper/WebScraper/scrapers/tls-client";
 configDotenv();
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
