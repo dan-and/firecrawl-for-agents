@@ -109,9 +109,11 @@ export async function scrapeController(
         error: "Request timed out",
       });
     } else {
+      const message = e instanceof Error ? e.message : String(e);
+      Logger.error(`Scrape failed for job`, { error: message });
       return res.status(500).json({
         success: false,
-        error: `(Internal server error) - ${e && e?.message ? e.message : e}`,
+        error: message.length > 0 ? message : "An unexpected error occurred while scraping. Please try again.",
       });
     }
   }

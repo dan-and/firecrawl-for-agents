@@ -102,7 +102,7 @@ describe("scrapeWithFetch", () => {
 
     expect(result.content).toBe("");
     expect(result.pageError).toBe("Request timed out");
-    expect(result.pageStatusCode).toBeNull();
+    expect(result.pageStatusCode).toBe(408);
   });
 
   it("returns 'Request timed out' on UND_ERR_BODY_TIMEOUT", async () => {
@@ -115,6 +115,7 @@ describe("scrapeWithFetch", () => {
 
     expect(result.content).toBe("");
     expect(result.pageError).toBe("Request timed out");
+    expect(result.pageStatusCode).toBe(408);
   });
 
   it("returns 'Request timed out' on legacy ECONNABORTED code", async () => {
@@ -127,17 +128,44 @@ describe("scrapeWithFetch", () => {
 
     expect(result.content).toBe("");
     expect(result.pageError).toBe("Request timed out");
+    expect(result.pageStatusCode).toBe(408);
   });
 
-  // ── Network / DNS errors ──────────────────────────────────────────────────
+  // ── T1-Y: Network error codes ────────────────────────────────────────────
 
-  it("returns empty content and error message on network error", async () => {
-    mockRequest.mockRejectedValueOnce(new Error("getaddrinfo ENOTFOUND nonexistent.example.com"));
+  it("returns pageStatusCode 0 for ENOTFOUND (DNS failure)", async () => {
+    const err = Object.assign(new Error("getaddrinfo ENOTFOUND nonexistent.example.com"), {
+      code: "ENOTFOUND",
+    });
+    mockRequest.mockRejectedValueOnce(err);
 
     const result = await scrapeWithFetch("https://nonexistent.example.com");
 
-    expect(result.content).toBe("");
-    expect(result.pageError).toBeDefined();
-    expect(result.pageStatusCode).toBeNull();
+    expect(result.pageStatusCode).toBe(0);
+    expect(result.pageError).toMatch(/dns/i);
+  });
+
+  it("returns pageStatusCode 0 for ECONNREFUSED", async () => {
+    const err = Object.assign(new Error("connect ECONNREFUSED 127.0.0.1:80"), {
+      code: "ECONNREFUSED",
+    });
+    mockRequest.mockRejectedValueOnce(err);
+
+    const result = await scrapeWithFetch("https://example.com");
+
+    expect(result.pageStatusCode).toBe(0);
+    expect(result.pageError).toMatch(/refused/i);
+  });
+
+  it("returns pageStatusCode 0 for ECONNRESET", async () => {
+    const err = Object.assign(new Error("socket hang up"), {
+      code: "ECONNRESET",
+    });
+    mockRequest.mockRejectedValueOnce(err);
+
+    const result = await scrapeWithFetch("https://example.com");
+
+    expect(result.pageStatusCode).toBe(0);
+    expect(result.pageError).toMatch(/reset/i);
   });
 });

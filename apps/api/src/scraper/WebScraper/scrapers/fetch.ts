@@ -29,7 +29,8 @@ function isPDFContent(content: string): boolean {
 }
 
 export async function scrapeWithFetch(
-  url: string
+  url: string,
+  parsePDF: boolean = true
 ): Promise<{ content: string; pageStatusCode?: number; pageError?: string }> {
   const startTime = Date.now();
 
@@ -82,15 +83,38 @@ export async function scrapeWithFetch(
       error?.code === "ECONNABORTED";
 
     if (isTimeout) {
-      Logger.debug(`⛏️ fetch: Request timed out for ${url}`);
+      Logger.debug(`⛏️ fetch: Timed out for ${url}`);
+      return { content: "", pageStatusCode: 408, pageError: "Request timed out" };
+    }
+
+    if (error?.code === "ENOTFOUND") {
+      Logger.debug(`⛏️ fetch: DNS failure for ${url}`);
       return {
         content: "",
-        pageStatusCode: null,
-        pageError: "Request timed out",
+        pageStatusCode: 0,
+        pageError: `DNS lookup failed: hostname not found for ${new URL(url).hostname}`,
       };
     }
 
-    Logger.debug(`⛏️ fetch: Failed to fetch url: ${url} | Error: ${error}`);
+    if (error?.code === "ECONNREFUSED") {
+      Logger.debug(`⛏️ fetch: Connection refused for ${url}`);
+      return {
+        content: "",
+        pageStatusCode: 0,
+        pageError: `Connection refused by ${new URL(url).hostname}`,
+      };
+    }
+
+    if (error?.code === "ECONNRESET") {
+      Logger.debug(`⛏️ fetch: Connection reset for ${url}`);
+      return {
+        content: "",
+        pageStatusCode: 0,
+        pageError: `Connection reset by ${new URL(url).hostname} (server closed connection unexpectedly)`,
+      };
+    }
+
+    Logger.debug(`⛏️ fetch: Failed to fetch ${url} | Error: ${error}`);
     return {
       content: "",
       pageStatusCode: null,

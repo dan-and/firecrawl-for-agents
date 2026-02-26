@@ -28,6 +28,7 @@ export type PageOptions = {
   useFastMode?: boolean; // beta
   disableJsDom?: boolean; // beta
   atsv?: boolean; // beta
+  proxy?: "basic" | "stealth" | "enhanced";
 };
 
 export type SearchOptions = {

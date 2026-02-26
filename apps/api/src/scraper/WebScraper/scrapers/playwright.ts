@@ -48,6 +48,7 @@ export async function scrapeWithPlaywright(
   url: string,
   waitFor: number = 0,
   headers?: Record<string, string>,
+  scrapeId?: string,
 ): Promise<{ content: string; pageStatusCode?: number; pageError?: string }> {
   const logParams = {
     url,
@@ -70,6 +71,7 @@ export async function scrapeWithPlaywright(
         url: url,
         wait_after_load: waitParam,
         headers: headers,
+        scrapeId: scrapeId,
       },
       {
         headers: {

@@ -177,18 +177,19 @@ export async function scrapeSingleUrl(
     } = { text: "", screenshot: "", metadata: {} };
 
     switch (method) {
-      case "playwright":
-        if (process.env.PLAYWRIGHT_MICROSERVICE_URL) {
-          const response = await scrapeWithPlaywright(
-            url,
-            pageOptions.waitFor,
-            pageOptions.headers
-          );
-          scraperResponse.text = response.content;
-          scraperResponse.metadata.pageStatusCode = response.pageStatusCode;
-          scraperResponse.metadata.pageError = response.pageError;
-        }
-        break;
+       case "playwright":
+         if (process.env.PLAYWRIGHT_MICROSERVICE_URL) {
+           const response = await scrapeWithPlaywright(
+             url,
+             pageOptions.waitFor,
+             pageOptions.headers,
+             scrapeId
+           );
+           scraperResponse.text = response.content;
+           scraperResponse.metadata.pageStatusCode = response.pageStatusCode;
+           scraperResponse.metadata.pageError = response.pageError;
+         }
+         break;
       case "tls-client": {
         const response = await scrapeWithTlsClient(url);
         scraperResponse.text = response.content;
@@ -236,7 +237,15 @@ export async function scrapeSingleUrl(
     } catch (error) {
       Logger.error(`Invalid URL key, trying: ${urlToScrape}`);
     }
-    const defaultScraper = urlSpecificParams[urlKey]?.defaultScraper ?? "";
+    // proxy param overrides per-domain defaults: "basic" forces fetch, "stealth"/"enhanced" force Hero
+    const proxyEngine =
+      pageOptions.proxy === "basic"
+        ? "fetch"
+        : pageOptions.proxy === "stealth" || pageOptions.proxy === "enhanced"
+        ? "playwright"
+        : undefined;
+    const defaultScraper =
+      proxyEngine ?? urlSpecificParams[urlKey]?.defaultScraper ?? "";
     const forcedEngine = getForcedEngine(urlToScrape);
     const scrapersInOrder = getScrapingFallbackOrder(defaultScraper, forcedEngine);
 
@@ -301,7 +310,15 @@ export async function scrapeSingleUrl(
     }
 
     if (!rawHtml) {
-      throw new Error(`All scraping methods failed for URL: ${urlToScrape}`);
+      const heroConfigured = !!process.env.PLAYWRIGHT_MICROSERVICE_URL;
+      throw new Error(
+        `Unable to retrieve content from ${urlToScrape}. ` +
+        `Tried: ${scrapersInOrder.join(", ")}. ` +
+        (heroConfigured
+          ? "The site may be blocking automated requests. Try a different URL or check if the site requires login."
+          : "The Hero browser service is not configured (PLAYWRIGHT_MICROSERVICE_URL is not set). " +
+            "Set it to enable JavaScript rendering for sites that require it.")
+      );
     }
 
     const soup = cheerio.load(rawHtml);
