@@ -98,7 +98,7 @@ function getScrapingFallbackOrder(defaultScraper?: string) {
     }
   });
 
-  let defaultOrder = ["playwright", "fetch"].filter(Boolean);
+  let defaultOrder = ["fetch", "playwright"].filter(Boolean);
 
   const filteredDefaultOrder = defaultOrder.filter(
     (scraper: (typeof baseScrapers)[number]) =>

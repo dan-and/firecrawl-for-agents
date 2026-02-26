@@ -1,114 +1,100 @@
-import axios from "axios";
-import { fetchTimeout } from "../global";
+import { request } from "undici";
+import { universalTimeout } from "../global";
 import { Logger } from "../../../lib/logger";
 
-/**
- * Detects if the content is a PDF file
- * @param content The content to check
- * @returns true if the content is a PDF
- */
 function isPDFContent(content: string): boolean {
-  if (!content || typeof content !== 'string') {
+  if (!content || typeof content !== "string") {
     return false;
   }
-  
   const trimmedContent = content.trim();
-  
-  // Check for PDF header signature
-  if (trimmedContent.startsWith('%PDF-')) {
+  if (trimmedContent.startsWith("%PDF-")) {
     return true;
   }
-  
-  // Check for PDF binary content indicators
-  if (trimmedContent.includes('obj') && trimmedContent.includes('endobj') && 
-      trimmedContent.includes('stream') && trimmedContent.includes('endstream')) {
+  if (
+    trimmedContent.includes("obj") &&
+    trimmedContent.includes("endobj") &&
+    trimmedContent.includes("stream") &&
+    trimmedContent.includes("endstream")
+  ) {
     return true;
   }
-  
-  // Check for high ratio of non-printable characters (typical of binary PDF content)
-  const nonPrintableChars = (content.match(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g) || []).length;
+  const nonPrintableChars = (
+    content.match(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g) || []
+  ).length;
   const totalChars = content.length;
   if (totalChars > 100 && nonPrintableChars / totalChars > 0.1) {
     return true;
   }
-  
   return false;
 }
 
-/**
- * Scrapes a URL with Axios
- * @param url The URL to scrape
- * @returns The scraped content
- */
 export async function scrapeWithFetch(
   url: string
 ): Promise<{ content: string; pageStatusCode?: number; pageError?: string }> {
-  const logParams = {
-    url,
-    scraper: "fetch",
-    success: false,
-    response_code: null,
-    time_taken_seconds: null,
-    error_message: null,
-    html: "",
-    startTime: Date.now(),
-  };
+  const startTime = Date.now();
 
   try {
-    const response = await axios.get(url, {
+    const { statusCode, body } = await request(url, {
+      method: "GET",
       headers: {
         "Content-Type": "application/json",
+        "User-Agent":
+          "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
       },
-      timeout: fetchTimeout,
-      transformResponse: [(data) => data], // Prevent axios from parsing JSON automatically
+      headersTimeout: universalTimeout,
+      bodyTimeout: universalTimeout,
     });
 
-    if (response.status !== 200) {
+    // Always consume the body fully — undici holds the connection open until the
+    // body stream is drained. Do this before the status check.
+    const text = await body.text();
+
+    if (statusCode !== 200) {
       Logger.debug(
-        `⛏️ Axios: Failed to fetch url: ${url} with status: ${response.status}`
+        `⛏️ fetch: Failed to fetch url: ${url} with status: ${statusCode}`
       );
-      logParams.error_message = response.statusText;
-      logParams.response_code = response.status;
       return {
         content: "",
-        pageStatusCode: response.status,
-        pageError: response.statusText,
+        pageStatusCode: statusCode,
+        pageError: `HTTP ${statusCode}`,
       };
     }
 
-    const text = response.data;
-    
-    // Check if the content is a PDF file
     if (isPDFContent(text)) {
-      Logger.debug(`⛏️ fetch: Detected PDF content for ${url}, skipping PDF processing`);
-      logParams.error_message = "PDF content detected - not suitable for text extraction";
-      logParams.response_code = response.status;
+      Logger.debug(
+        `⛏️ fetch: Detected PDF content for ${url}, skipping PDF processing`
+      );
       return {
         content: "",
-        pageStatusCode: response.status,
+        pageStatusCode: statusCode,
         pageError: "PDF content detected - not suitable for text extraction",
       };
     }
-    
-    logParams.success = true;
-    logParams.html = text;
-    logParams.response_code = response.status;
-    return { content: text, pageStatusCode: response.status, pageError: null };
+
+    Logger.debug(
+      `⛏️ fetch: Successfully fetched ${url} in ${Date.now() - startTime}ms`
+    );
+    return { content: text, pageStatusCode: statusCode, pageError: null };
   } catch (error) {
-    if (error.code === "ECONNABORTED") {
-      logParams.error_message = "Request timed out";
-      Logger.debug(`⛏️ Axios: Request timed out for ${url}`);
-    } else {
-      logParams.error_message = error.message || error;
-      Logger.debug(`⛏️ Axios: Failed to fetch url: ${url} | Error: ${error}`);
+    const isTimeout =
+      error?.code === "UND_ERR_HEADERS_TIMEOUT" ||
+      error?.code === "UND_ERR_BODY_TIMEOUT" ||
+      error?.code === "ECONNABORTED";
+
+    if (isTimeout) {
+      Logger.debug(`⛏️ fetch: Request timed out for ${url}`);
+      return {
+        content: "",
+        pageStatusCode: null,
+        pageError: "Request timed out",
+      };
     }
+
+    Logger.debug(`⛏️ fetch: Failed to fetch url: ${url} | Error: ${error}`);
     return {
       content: "",
       pageStatusCode: null,
-      pageError: logParams.error_message,
+      pageError: error.message || String(error),
     };
-  } finally {
-    const endTime = Date.now();
-    logParams.time_taken_seconds = (endTime - logParams.startTime) / 1000;
   }
 }

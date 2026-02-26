@@ -197,7 +197,7 @@ async function processJob(job: Job, token: string) {
       const sc = (await getCrawl(job.data.crawl_id)) as StoredCrawl;
 
       if (!job.data.sitemapped && job.data.crawlerOptions !== null) {
-        if (!sc.cancelled) {
+        if (sc && !sc.cancelled) {
           const crawler = crawlToCrawler(job.data.crawl_id, sc);
 
           const links = crawler.extractLinksFromHTML(
