@@ -10,6 +10,7 @@ import {
 } from "./types";
 import { v7 as uuidv7 } from "uuid";
 import { addScrapeJobRaw, waitForJob } from "../../services/queue-jobs";
+import { getScrapeQueue } from "../../services/queue-service";
 import { getJobPriority } from "../../lib/job-priority";
 import { PlanType } from "../../types";
 
@@ -118,6 +119,13 @@ export async function scrapeController(
     }
   }
 
+  // Get the job from the queue to access processedOn and timestamp
+  const jobFromQueue = await getScrapeQueue().getJob(job.id);
+  const queueDurationMs: number | null =
+    jobFromQueue?.processedOn != null && jobFromQueue?.timestamp != null
+      ? jobFromQueue.processedOn - jobFromQueue.timestamp
+      : null;
+
   await job.remove();
 
   if (!doc) {
@@ -144,9 +152,13 @@ export async function scrapeController(
     }
   }
 
+  const converted = legacyDocumentConverter(doc);
+  if (queueDurationMs != null && converted.metadata) {
+    (converted.metadata as any) = { ...converted.metadata, queueDurationMs };
+  }
   return res.status(200).json({
     success: true,
-    data: legacyDocumentConverter(doc),
+    data: converted,
     scrape_id: origin?.includes("website") ? jobId : undefined,
   });
 }
