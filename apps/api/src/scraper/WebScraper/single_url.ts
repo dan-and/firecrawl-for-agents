@@ -309,6 +309,21 @@ export async function scrapeSingleUrl(
       );
     }
 
+    // Provide a clear error when screenshot was requested but the URL is a PDF.
+    // A blank screenshot field is otherwise confusing to API callers.
+    if (
+      pageOptions.screenshot &&
+      pageError &&
+      pageError.includes("PDF content detected")
+    ) {
+      pageError =
+        "Screenshot format is not supported for PDF or binary document URLs. " +
+        "Use formats: [\"markdown\"] with parsePDF: true to extract text content instead.";
+    }
+
+    // Debug logging
+    Logger.debug(`⛏️ single_url: pageError after fallback loop = ${pageError}`);
+
     if (!rawHtml) {
       const heroConfigured = !!process.env.PLAYWRIGHT_MICROSERVICE_URL;
       throw new Error(
