@@ -32,7 +32,9 @@ import { getJobs } from "../../src/controllers/v1/crawl-status";
 import { configDotenv } from "dotenv";
 import { callWebhook } from "../../src/scraper/WebScraper/single_url";
 import { shutdownTlsClient } from "../../src/scraper/WebScraper/scrapers/tls-client";
+import { initEngineForcing } from "../../src/scraper/WebScraper/utils/engine-forcing";
 configDotenv();
+initEngineForcing();
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 

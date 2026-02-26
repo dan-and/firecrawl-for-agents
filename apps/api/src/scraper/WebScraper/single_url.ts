@@ -13,6 +13,7 @@ import { Logger } from "../../lib/logger";
 import { clientSideError } from "../../strings";
 import { rewriteUrl } from "../../lib/rewriteUrl";
 import axios from "axios";
+import { getForcedEngine } from "./utils/engine-forcing";
 
 dotenv.config();
 
@@ -91,9 +92,13 @@ export async function generateRequestParams(
  * Get the order of scrapers to be used for scraping a URL
  * If the user doesn't have envs set for a specific scraper, it will be removed from the order.
  * @param defaultScraper The default scraper to use if the URL does not have a specific scraper order defined
+ * @param forcedEngine The engine to force for this URL (overrides default order)
  * @returns The order of scrapers to be used for scraping a URL
  */
-function getScrapingFallbackOrder(defaultScraper?: string) {
+function getScrapingFallbackOrder(
+  defaultScraper?: string,
+  forcedEngine?: string
+) {
   const availableScrapers = baseScrapers.filter((scraper) => {
     switch (scraper) {
       case "playwright":
@@ -112,7 +117,9 @@ function getScrapingFallbackOrder(defaultScraper?: string) {
       availableScrapers.includes(scraper)
   );
   const uniqueScrapers = new Set(
-    defaultScraper
+    forcedEngine
+      ? [forcedEngine, ...availableScrapers]
+      : defaultScraper
       ? [defaultScraper, ...filteredDefaultOrder, ...availableScrapers]
       : [...filteredDefaultOrder, ...availableScrapers]
   );
@@ -230,7 +237,8 @@ export async function scrapeSingleUrl(
       Logger.error(`Invalid URL key, trying: ${urlToScrape}`);
     }
     const defaultScraper = urlSpecificParams[urlKey]?.defaultScraper ?? "";
-    const scrapersInOrder = getScrapingFallbackOrder(defaultScraper);
+    const forcedEngine = getForcedEngine(urlToScrape);
+    const scrapersInOrder = getScrapingFallbackOrder(defaultScraper, forcedEngine);
 
     for (const scraper of scrapersInOrder) {
       // If exists text coming from crawler, use it
