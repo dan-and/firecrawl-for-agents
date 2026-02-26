@@ -21,6 +21,7 @@ x-common-service: &common-service
     - LOGGING_LEVEL=${LOGGING_LEVEL}
     - MAX_RAM=${MAX_RAM:-0.95}
     - MAX_CPU=${MAX_CPU:-0.95}
+    - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
   extra_hosts:
     - "host.docker.internal:host-gateway"
 
