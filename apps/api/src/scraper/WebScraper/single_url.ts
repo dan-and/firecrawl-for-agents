@@ -16,6 +16,9 @@ import axios from "axios";
 
 dotenv.config();
 
+/** HTML larger than this byte threshold is returned as-is instead of being converted to Markdown. */
+const MAX_HTML_FOR_MARKDOWN = 300 * 1024; // 300 KB
+
 export const callWebhook = async (
   webhookUrls: string[],
   data: any,
@@ -196,7 +199,10 @@ export async function scrapeSingleUrl(
     }
 
     let cleanedHtml = removeUnwantedElements(scraperResponse.text, pageOptions);
-    const text = await parseMarkdown(cleanedHtml);
+    const text =
+      cleanedHtml.length > MAX_HTML_FOR_MARKDOWN
+        ? cleanedHtml
+        : await parseMarkdown(cleanedHtml);
 
     return {
       text,
@@ -235,7 +241,10 @@ export async function scrapeSingleUrl(
       ) {
         rawHtml = existingHtml;
         let cleanedHtml = removeUnwantedElements(existingHtml, pageOptions);
-        text = await parseMarkdown(cleanedHtml);
+        text =
+          cleanedHtml.length > MAX_HTML_FOR_MARKDOWN
+            ? cleanedHtml
+            : await parseMarkdown(cleanedHtml);
         html = cleanedHtml;
         break;
       }

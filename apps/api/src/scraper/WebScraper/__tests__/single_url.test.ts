@@ -59,3 +59,46 @@ describe("scrapeSingleUrl — fallback loop break conditions", () => {
     expect(result.metadata.pageStatusCode).toBe(500);
   });
 });
+
+import * as markdownModule from "../../../lib/html-to-markdown";
+jest.mock("../../../lib/html-to-markdown");
+const mockParseMarkdown = markdownModule.parseMarkdown as jest.MockedFunction<
+  typeof markdownModule.parseMarkdown
+>;
+
+describe("scrapeSingleUrl — markdown size guard", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    delete process.env.PLAYWRIGHT_MICROSERVICE_URL;
+    mockParseMarkdown.mockResolvedValue("converted markdown");
+  });
+
+  it("calls parseMarkdown for HTML under 300 KB", async () => {
+    mockFetch.mockResolvedValueOnce({
+      content: "<p>small</p>",
+      pageStatusCode: 200,
+      pageError: null,
+    });
+
+    await scrapeSingleUrl("https://example.com", { includeMarkdown: true });
+
+    expect(mockParseMarkdown).toHaveBeenCalled();
+  });
+
+  it("skips parseMarkdown for HTML over 300 KB", async () => {
+    const bigHtml = "<p>" + "x".repeat(310 * 1024) + "</p>";
+    mockFetch.mockResolvedValueOnce({
+      content: bigHtml,
+      pageStatusCode: 200,
+      pageError: null,
+    });
+
+    const result = await scrapeSingleUrl("https://example.com/big", {
+      includeMarkdown: true,
+    });
+
+    expect(mockParseMarkdown).not.toHaveBeenCalled();
+    // The content field should be the raw HTML, not empty
+    expect(result.content.length).toBeGreaterThan(0);
+  });
+});
