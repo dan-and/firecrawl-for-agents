@@ -93,7 +93,7 @@ const workerFun = async (
     connection: getRedisConnection(),
     lockDuration: 1 * 60 * 1000,
     stalledInterval: 30 * 1000,
-    maxStalledCount: 10,
+    maxStalledCount: 2,
   });
 
   worker.startStalledCheckTimer();

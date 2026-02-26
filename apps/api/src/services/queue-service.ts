@@ -24,6 +24,7 @@ export function getScrapeQueue(): Queue<any> {
     scrapeQueue = new Queue(scrapeQueueName, {
       connection: getRedisConnection(),
       defaultJobOptions: {
+        attempts: 1,
         removeOnComplete: {
           age: 3600, // 1 hour
         },
