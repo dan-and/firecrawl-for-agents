@@ -9,6 +9,9 @@ import robotsParser from "robots-parser";
 import { axiosTimeout } from "../../../src/lib/timeout";
 import { Logger } from "../../../src/lib/logger";
 
+/** Maximum number of URLs to accept from a single sitemap. Prevents memory spikes from huge sitemaps. */
+const SITEMAP_URL_LIMIT = 10_000;
+
 export class WebCrawler {
   private jobId: string;
   private crawlId: string;
@@ -105,7 +108,7 @@ export class WebCrawler {
           }
           return !this.visited.has(u) && this.filterURL(u);
         })
-        .slice(0, this.limit);
+        .slice(0, Math.min(this.limit, SITEMAP_URL_LIMIT));
       return filteredLinks.map((link) => ({ url: link, html: "" }));
     }
     return null;
