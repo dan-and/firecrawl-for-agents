@@ -322,12 +322,32 @@ const shutdown = async () => {
 process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 
+const HERO_STARTUP_TIMEOUT_MS =
+  Number(process.env.HERO_STARTUP_TIMEOUT_MS) || 30_000;
+
 (async () => {
-  await initializeHeroCore();
+  await Promise.race([
+    initializeHeroCore(),
+    new Promise<never>((_, reject) =>
+      setTimeout(
+        () =>
+          reject(
+            new Error(
+              `Hero Core failed to initialize within ${HERO_STARTUP_TIMEOUT_MS} ms. ` +
+                `Set HERO_STARTUP_TIMEOUT_MS to increase the limit.`
+            )
+          ),
+        HERO_STARTUP_TIMEOUT_MS
+      )
+    ),
+  ]);
 
   app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
   });
-})().catch(console.error);
+})().catch((err) => {
+  console.error("Fatal: Hero service startup failed:", err.message);
+  process.exit(1);
+});
 
 export default app;
