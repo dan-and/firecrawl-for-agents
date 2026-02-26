@@ -1,5 +1,5 @@
 import axios from "axios";
-import { universalTimeout } from "../global";
+import { fetchTimeout } from "../global";
 import { Logger } from "../../../lib/logger";
 
 /**
@@ -59,7 +59,7 @@ export async function scrapeWithFetch(
       headers: {
         "Content-Type": "application/json",
       },
-      timeout: universalTimeout,
+      timeout: fetchTimeout,
       transformResponse: [(data) => data], // Prevent axios from parsing JSON automatically
     });
 
