@@ -3,6 +3,7 @@ import { universalTimeout } from "../global";
 import { Logger } from "../../../lib/logger";
 import { isDOCXUrl, parseDOCXBuffer } from "./docx";
 import { isDOCUrl, parseDOCBuffer } from "./doc";
+import { isSpreadsheetUrl, parseSpreadsheetBuffer } from "./xlsx";
 
 function isPDFContent(content: string): boolean {
   if (!content || typeof content !== "string") {
@@ -62,6 +63,39 @@ export async function scrapeWithFetch(
       const html = await parseDOCXBuffer(Buffer.from(docxBytes));
       Logger.debug(`⛏️ fetch: DOCX parsed to HTML (${html.length} chars)`);
       return { content: html, pageStatusCode: docxResp.statusCode, pageError: null };
+    }
+
+    if (isSpreadsheetUrl(url)) {
+      Logger.debug(`⛏️ fetch: Spreadsheet URL detected, fetching as binary: ${url}`);
+      const xlsxResp = await request(url, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "User-Agent":
+            "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+        },
+        headersTimeout: universalTimeout,
+        bodyTimeout: universalTimeout,
+      });
+
+      if (xlsxResp.statusCode !== 200) {
+        return {
+          content: "",
+          pageStatusCode: xlsxResp.statusCode,
+          pageError: `HTTP ${xlsxResp.statusCode}`,
+        };
+      }
+
+      const contentType = (xlsxResp.headers?.["content-type"] as string | undefined) ?? "";
+      if (contentType.includes("text/html")) {
+        Logger.debug(`⛏️ fetch: Spreadsheet URL returned HTML (likely a redirect page), falling through to normal scrape`);
+        // fall through — let the normal fetch path handle it
+      } else {
+        const xlsxBytes = await xlsxResp.body.bytes();
+        const html = await parseSpreadsheetBuffer(Buffer.from(xlsxBytes));
+        Logger.debug(`⛏️ fetch: Spreadsheet parsed to HTML (${html.length} chars)`);
+        return { content: html, pageStatusCode: xlsxResp.statusCode, pageError: null };
+      }
     }
 
     if (isDOCUrl(url)) {
