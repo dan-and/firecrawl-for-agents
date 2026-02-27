@@ -76,6 +76,9 @@ const processJobInternal = async (token: string, job: Job) => {
 
 let isShuttingDown = false;
 
+const RUNPOD_POD_ID = process.env.RUNPOD_POD_ID;
+if (RUNPOD_POD_ID) { Logger.info('Running on RunPod pod: ' + RUNPOD_POD_ID); }
+
 if (require.main === module) {
   process.on("SIGINT", () => {
     Logger.info("Received SIGINT. Shutting down gracefully...");
@@ -83,9 +86,13 @@ if (require.main === module) {
   });
 
   process.on("SIGTERM", async () => {
-    Logger.info("Received SIGTERM. Shutting down gracefully...");
+    if (RUNPOD_POD_ID) {
+      Logger.error('RunPod SIGTERM received on pod ' + RUNPOD_POD_ID + '. This is likely an OOM kill. The active job (if any) will be retried by BullMQ (maxStalledCount controls retry count).');
+    } else {
+      Logger.info('Received SIGTERM. Shutting down gracefully...');
+    }
     await shutdownTlsClient();
-    process.exit(0);
+    isShuttingDown = true;
   });
 }
 
