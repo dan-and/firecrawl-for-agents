@@ -58,18 +58,6 @@ export async function scrapeController(
   req: RequestWithAuth<{}, ScrapeResponse, ScrapeRequest>,
   res: Response<ScrapeResponse>
 ) {
-  // actions are not yet implemented — fail fast with a helpful message
-  const rawBody = req.body as any;
-  if (Array.isArray(rawBody?.actions) && rawBody.actions.length > 0) {
-    return res.status(400).json({
-      success: false,
-      error:
-        "Browser actions (click, type, scroll, wait, etc.) are not yet supported in this deployment. " +
-        "Actions require the Hero browser service to be extended with action handlers. " +
-        "Remove the 'actions' field from your request.",
-    });
-  }
-
   req.body = scrapeRequestSchema.parse(req.body);
 
   const origin = req.body.origin;

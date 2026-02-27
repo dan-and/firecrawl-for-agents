@@ -10,6 +10,17 @@ export interface Progress {
   currentDocument?: Document;
 }
 
+export type SearchOptions = {
+  limit?: number;
+  tbs?: string;
+  filter?: string;
+  lang?: string;
+  country?: string;
+  location?: string;
+};
+
+export type ScrapeAction = any;
+
 export type PageOptions = {
   includeMarkdown?: boolean;
   includeExtract?: boolean;
@@ -29,15 +40,7 @@ export type PageOptions = {
   disableJsDom?: boolean; // beta
   atsv?: boolean; // beta
   proxy?: "basic" | "stealth" | "enhanced";
-};
-
-export type SearchOptions = {
-  limit?: number;
-  tbs?: string;
-  filter?: string;
-  lang?: string;
-  country?: string;
-  location?: string;
+  actions?: any[]; // Array of action objects: { type: "click" | "type" | "wait" | "scroll" | "screenshot", ... }
 };
 
 export type CrawlerOptions = {

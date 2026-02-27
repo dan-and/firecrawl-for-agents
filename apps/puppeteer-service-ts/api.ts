@@ -27,6 +27,7 @@ interface UrlModel {
   timeout?: number;
   headers?: { [key: string]: string };
   check_selector?: string;
+  actions?: any[];
 }
 
 const isValidUrl = (urlString: string): boolean => {
@@ -53,6 +54,7 @@ const scrape = async (
   headers?: { [key: string]: string },
   check_selector?: string,
   proxy_url?: string,
+  actions?: any[],
 ) => {
   const heroInstance = new Hero({
     connectionToCore,
@@ -101,6 +103,49 @@ const scrape = async (
   // Wait additional time if specified
   if (wait_after_load > 0) {
     await tab.waitForMillis(wait_after_load);
+  }
+
+  // Execute actions if provided
+  if (actions && actions.length > 0) {
+    console.log(`Executing ${actions.length} actions:`, JSON.stringify(actions));
+    for (const action of actions) {
+      try {
+        switch (action.type) {
+          case "wait":
+            // Wait action is supported
+            await tab.waitForMillis(action.milliseconds || 0);
+            console.log(`  - Waited ${action.milliseconds}ms`);
+            break;
+
+          case "click":
+            // TODO: Implement click action when Hero API methods are available
+            // This is a placeholder - will be implemented when Hero API is confirmed
+            console.log(`  - Click selector "${action.selector}" (not yet implemented)`);
+            break;
+
+          case "type":
+            // TODO: Implement type action when Hero API methods are available
+            console.log(`  - Type text "${action.text}" into "${action.selector}" (not yet implemented)`);
+            break;
+
+          case "scroll":
+            // TODO: Implement scroll action when Hero API methods are available
+            console.log(`  - Scroll ${action.direction} by ${action.amount || 500}px (not yet implemented)`);
+            break;
+
+          case "screenshot":
+            // TODO: Implement screenshot action when Hero API methods are available
+            console.log(`  - Screenshot (not yet implemented)`);
+            break;
+
+          default:
+            console.warn(`Unknown action type: ${action.type}`);
+        }
+      } catch (error) {
+        console.error(`Error executing action ${action.type}:`, error);
+        // Continue with other actions even if one fails
+      }
+    }
   }
 
   // Get the page content
@@ -210,6 +255,7 @@ app.post("/scrape", async (req: Request, res: Response) => {
     timeout = 60000,
     headers,
     check_selector,
+    actions,
   }: UrlModel = req.body;
 
   console.log(`\n================= Scrape Request =================`);
@@ -218,6 +264,7 @@ app.post("/scrape", async (req: Request, res: Response) => {
   console.log(`Timeout: ${timeout}`);
   console.log(`Headers: ${headers ? JSON.stringify(headers) : "None"}`);
   console.log(`Check Selector: ${check_selector ? check_selector : "None"}`);
+  console.log(`Actions: ${actions ? JSON.stringify(actions) : "None"}`);
   console.log(`==================================================`);
 
   if (!url) {
@@ -240,6 +287,8 @@ app.post("/scrape", async (req: Request, res: Response) => {
         timeout,
         headers,
         check_selector,
+        undefined,
+        actions,
       );
     } catch (error) {
       if (
@@ -255,6 +304,7 @@ app.post("/scrape", async (req: Request, res: Response) => {
           headers,
           check_selector,
           proxy_url,
+          actions,
         );
       }
       throw error;

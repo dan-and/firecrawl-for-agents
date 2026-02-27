@@ -41,7 +41,8 @@ function isPDFContent(content: string): boolean {
  * @param url The URL to scrape
  * @param waitFor The time to wait for the page to load
  * @param headers The headers to send with the request
- * @param pageOptions The options for the page
+ * @param scrapeId The scrape ID for logging
+ * @param actions Optional array of browser actions to execute
  * @returns The scraped content
  */
 export async function scrapeWithPlaywright(
@@ -49,6 +50,7 @@ export async function scrapeWithPlaywright(
   waitFor: number = 0,
   headers?: Record<string, string>,
   scrapeId?: string,
+  actions?: any[],
 ): Promise<{ content: string; pageStatusCode?: number; pageError?: string }> {
   const logParams = {
     url,
@@ -72,6 +74,7 @@ export async function scrapeWithPlaywright(
         wait_after_load: waitParam,
         headers: headers,
         scrapeId: scrapeId,
+        actions: actions,
       },
       {
         headers: {

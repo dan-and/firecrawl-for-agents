@@ -44,6 +44,8 @@ export const extractOptions = z
 
 export type ExtractOptions = z.infer<typeof extractOptions>;
 
+export type ScrapeAction = any;
+
 export const scrapeOptions = z
   .object({
     formats: z
@@ -58,6 +60,7 @@ export const scrapeOptions = z
     waitFor: z.number().int().nonnegative().finite().safe().default(0),
     extract: extractOptions.optional(),
     proxy: z.enum(["basic", "stealth", "enhanced"]).optional(),
+    actions: z.array(z.any()).optional(), // Array of browser action objects
   })
   .strict(strictMessage);
 
@@ -270,6 +273,7 @@ export function legacyScrapeOptions(x: ScrapeOptions): PageOptions {
     headers: x.headers,
     screenshot: x.formats.includes("screenshot"),
     proxy: x.proxy,
+    actions: x.actions,
   };
 }
 
