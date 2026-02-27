@@ -146,33 +146,31 @@ export async function crawlController(
 
   await saveCrawl(id, sc);
 
-  const sitemap =
-    sc.crawlerOptions.ignoreSitemap ?? true
-      ? null
-      : await crawler.tryGetSitemap();
+  // Determine whether to use the sitemap
+  const useSitemap = !(sc.crawlerOptions.ignoreSitemap ?? true) || sc.crawlerOptions.sitemapOnly;
+  const sitemap = useSitemap ? await crawler.tryGetSitemap() : null;
 
   if (sitemap !== null && sitemap.length > 0) {
-    // FIX: Respect the limit parameter when processing sitemap URLs
+    // Sitemap found — queue the sitemap URLs
     const limit = crawlerOptions.limit || 10000;
     const limitedSitemap = sitemap.slice(0, limit);
-    
-    Logger.debug(`[Crawl] Sitemap found with URLs, applying limit`, { 
-      totalUrls: sitemap.length, 
+
+    Logger.debug(`[Crawl] Sitemap found with URLs, applying limit`, {
+      totalUrls: sitemap.length,
       limit: limit,
-      limitedUrls: limitedSitemap.length 
+      limitedUrls: limitedSitemap.length,
+      sitemapOnly: sc.crawlerOptions.sitemapOnly,
     });
-    
+
     let jobPriority = 20;
-    // If it is over 1000, we need to get the job priority,
-    // otherwise we can use the default priority of 20
     if (limitedSitemap.length > 1000) {
-      // set base to 21
       jobPriority = await getJobPriority({
         plan: req.auth.plan,
         team_id: req.auth.team_id,
         basePriority: 21,
       });
     }
+
     const jobs = limitedSitemap.map((x) => {
       const url = x.url;
       const uuid = uuidv7();
@@ -208,7 +206,9 @@ export async function crawlController(
       jobs.map((x) => x.opts.jobId)
     );
     await getScrapeQueue().addBulk(jobs);
-  } else {
+  } else if (!sc.crawlerOptions.sitemapOnly) {
+    // Sitemap not found AND sitemapOnly is not set to true
+    // Fallback to single URL crawl (existing behavior)
     await lockURL(id, sc, req.body.url);
     const job = await addScrapeJobRaw(
       {
@@ -230,6 +230,13 @@ export async function crawlController(
       10
     );
     await addCrawlJob(id, job.id);
+  } else {
+    // Sitemap was requested via sitemapOnly=true but no sitemap was found
+    return res.status(400).json({
+      success: false,
+      error: "Sitemap was requested but no sitemap was found at the start URL. " +
+             "Please check the URL is correct or disable sitemapOnly.",
+    });
   }
 
   const protocol = req.protocol;

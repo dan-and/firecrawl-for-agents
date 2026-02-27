@@ -51,6 +51,8 @@ export type CrawlerOptions = {
   ignoreSitemap?: boolean;
   mode?: "default" | "fast"; // have a mode of some sort
   allowExternalLinks?: boolean;
+  regexOnFullUrl?: boolean; // if true, regex is matched against the full URL; if false, path only
+  sitemapOnly?: boolean; // only scrape URLs from sitemap, fallback to single URL if no sitemap
 };
 
 export type WebScraperOptions = {

@@ -19,6 +19,7 @@ export class WebCrawler {
   private baseUrl: string;
   protected includes: string[];
   protected excludes: string[];
+  protected regexOnFullUrl: boolean;
   private maxCrawledLinks: number;
   private maxCrawledDepth: number;
   private visited: Set<string> = new Set();
@@ -38,6 +39,7 @@ export class WebCrawler {
     maxCrawledDepth = 10,
     allowExternalLinks = false,
     crawlId,
+    crawlerOptions,
   }: {
     jobId: string;
     initialUrl: string;
@@ -48,6 +50,7 @@ export class WebCrawler {
     maxCrawledDepth?: number;
     allowExternalLinks?: boolean;
     crawlId: string;
+    crawlerOptions?: { regexOnFullUrl?: boolean };
   }) {
     this.jobId = jobId;
     this.initialUrl = initialUrl;
@@ -62,6 +65,7 @@ export class WebCrawler {
     this.maxCrawledDepth = maxCrawledDepth ?? 10;
     this.allowExternalLinks = allowExternalLinks ?? false;
     this.crawlId = crawlId;
+    this.regexOnFullUrl = crawlerOptions?.regexOnFullUrl ?? true;
   }
 
   public setBaseUrl(newBase: string): void {
@@ -423,16 +427,30 @@ export class WebCrawler {
     if (this.excludes.length === 0) {
       return false;
     }
-
-    return this.excludes.some((pattern) => new RegExp(pattern).test(url));
+    // regexOnFullUrl=true (default): test against full URL including domain and query string
+    // regexOnFullUrl=false: test against path component only (e.g. /blog/post-1)
+    const target = this.regexOnFullUrl ? url : new URL(url).pathname;
+    return this.excludes.some((pattern) => {
+      try {
+        return new RegExp(pattern).test(target);
+      } catch {
+        return false;
+      }
+    });
   }
 
   private matchesIncludes(url: string): boolean {
     if (this.includes.length === 0) {
       return true;
     }
-
-    return this.includes.some((pattern) => new RegExp(pattern).test(url));
+    const target = this.regexOnFullUrl ? url : new URL(url).pathname;
+    return this.includes.some((pattern) => {
+      try {
+        return new RegExp(pattern).test(target);
+      } catch {
+        return false;
+      }
+    });
   }
 
   private isInternalLink(link: string): boolean {

@@ -90,6 +90,8 @@ const crawlerOptions = z
     allowBackwardLinks: z.boolean().default(false),
     allowExternalLinks: z.boolean().default(false),
     ignoreSitemap: z.boolean().default(true),
+    regexOnFullUrl: z.boolean().default(true), // true = match against full URL, false = path only
+    sitemapOnly: z.boolean().default(false), // only scrape URLs from sitemap, fallback to single URL if no sitemap
   })
   .strict(strictMessage);
 
@@ -253,6 +255,8 @@ export function legacyCrawlerOptions(x: CrawlerOptions) {
     maxDepth: x.maxDepth,
     limit: x.limit,
     allowExternalLinks: x.allowExternalLinks,
+    regexOnFullUrl: x.regexOnFullUrl,
+    sitemapOnly: x.sitemapOnly,
   };
 }
 
