@@ -1,6 +1,8 @@
 import { request } from "undici";
 import { universalTimeout } from "../global";
 import { Logger } from "../../../lib/logger";
+import { isDOCXUrl, parseDOCXBuffer } from "./docx";
+import { isDOCUrl, parseDOCBuffer } from "./doc";
 
 function isPDFContent(content: string): boolean {
   if (!content || typeof content !== "string") {
@@ -35,6 +37,69 @@ export async function scrapeWithFetch(
   const startTime = Date.now();
 
   try {
+    if (isDOCXUrl(url)) {
+      Logger.debug(`⛏️ fetch: DOCX URL detected, fetching as binary: ${url}`);
+      const docxResp = await request(url, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "User-Agent":
+            "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+        },
+        headersTimeout: universalTimeout,
+        bodyTimeout: universalTimeout,
+      });
+
+      if (docxResp.statusCode !== 200) {
+        return {
+          content: "",
+          pageStatusCode: docxResp.statusCode,
+          pageError: `HTTP ${docxResp.statusCode}`,
+        };
+      }
+
+      const docxBytes = await docxResp.body.bytes();
+      const html = await parseDOCXBuffer(Buffer.from(docxBytes));
+      Logger.debug(`⛏️ fetch: DOCX parsed to HTML (${html.length} chars)`);
+      return { content: html, pageStatusCode: docxResp.statusCode, pageError: null };
+    }
+
+    if (isDOCUrl(url)) {
+      Logger.debug(`⛏️ fetch: Legacy .doc URL detected, fetching as binary: ${url}`);
+      const docResp = await request(url, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "User-Agent":
+            "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+        },
+        headersTimeout: universalTimeout,
+        bodyTimeout: universalTimeout,
+      });
+
+      if (docResp.statusCode !== 200) {
+        return {
+          content: "",
+          pageStatusCode: docResp.statusCode,
+          pageError: `HTTP ${docResp.statusCode}`,
+        };
+      }
+
+      try {
+        const docBytes = await docResp.body.bytes();
+        const text = await parseDOCBuffer(Buffer.from(docBytes));
+        Logger.debug(`⛏️ fetch: .doc parsed (${text.length} chars)`);
+        return { content: `<pre>${text}</pre>`, pageStatusCode: docResp.statusCode, pageError: null };
+      } catch (docErr) {
+        Logger.debug(`⛏️ fetch: .doc parse failed: ${docErr}`);
+        return {
+          content: "",
+          pageStatusCode: docResp.statusCode,
+          pageError: `Legacy .doc parse error: ${(docErr as Error).message}`,
+        };
+      }
+    }
+
     const { statusCode, body } = await request(url, {
       method: "GET",
       headers: {

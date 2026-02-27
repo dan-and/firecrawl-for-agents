@@ -176,6 +176,7 @@ export async function scrapeSingleUrl(
       metadata: { pageStatusCode?: number; pageError?: string | null };
     } = { text: "", screenshot: "", metadata: {} };
 
+    console.log("DEBUG attemptScraping called with method:", method);
     switch (method) {
        case "playwright":
          if (process.env.PLAYWRIGHT_MICROSERVICE_URL) {
@@ -198,6 +199,7 @@ export async function scrapeSingleUrl(
         break;
       }
       case "fetch": {
+        console.log("DEBUG single_url: about to call scrapeWithFetch");
         const response = await scrapeWithFetch(url);
         scraperResponse.text = response.content;
         scraperResponse.metadata.pageStatusCode = response.pageStatusCode;

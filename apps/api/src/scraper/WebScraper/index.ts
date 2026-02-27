@@ -242,15 +242,6 @@ export class WebScraperDataProvider {
     inProgress?: (progress: Progress) => void,
     allHtmls?: string[],
   ): Promise<Document[]> {
-    const pdfLinks = links.filter((link) => link.endsWith(".pdf"));
-    const docLinks = links.filter(
-      (link) => link.endsWith(".doc") || link.endsWith(".docx"),
-    );
-
-    links = links.filter(
-      (link) => !pdfLinks.includes(link) && !docLinks.includes(link),
-    );
-
     let [documents, sitemapData] = await Promise.all([
       this.convertUrlsToDocuments(links, inProgress, allHtmls),
       this.mode === "single_urls" && links.length > 0
