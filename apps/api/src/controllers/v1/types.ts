@@ -61,6 +61,7 @@ export const scrapeOptions = z
     extract: extractOptions.optional(),
     proxy: z.enum(["basic", "stealth", "enhanced"]).optional(),
     actions: z.array(z.any()).optional(), // Array of browser action objects
+    minAge: z.number().int().min(0).optional(),
   })
   .strict(strictMessage);
 
@@ -274,6 +275,7 @@ export function legacyScrapeOptions(x: ScrapeOptions): PageOptions {
     screenshot: x.formats.includes("screenshot"),
     proxy: x.proxy,
     actions: x.actions,
+    minAge: x.minAge,
   };
 }
 

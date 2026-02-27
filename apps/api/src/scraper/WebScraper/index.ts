@@ -294,6 +294,7 @@ export class WebScraperDataProvider {
       ? []
       : await this.getCachedDocuments(
           this.urls.slice(0, this.limit),
+          this.pageOptions?.minAge,
         );
     if (documents.length < this.limit) {
       const newDocuments: Document[] = await this.getDocuments(
@@ -387,13 +388,14 @@ export class WebScraperDataProvider {
         JSON.stringify({
           ...document,
           childrenLinks: childrenLinks || [],
+          cachedAt: Date.now(),
         }),
         60 * 60,
       ); // 10 days
     }
   }
 
-  async getCachedDocuments(urls: string[]): Promise<Document[]> {
+  async getCachedDocuments(urls: string[], minAge?: number): Promise<Document[]> {
     let documents: Document[] = [];
     for (const url of urls) {
       const normalizedUrl = this.normalizeUrl(url);
@@ -405,6 +407,12 @@ export class WebScraperDataProvider {
       );
       if (cachedDocumentString) {
         const cachedDocument = JSON.parse(cachedDocumentString);
+        if (minAge != null && cachedDocument.cachedAt != null) {
+          const ageMs = Date.now() - cachedDocument.cachedAt;
+          if (ageMs < minAge) {
+            continue;
+          }
+        }
         documents.push(cachedDocument);
 
         // get children documents
@@ -415,6 +423,15 @@ export class WebScraperDataProvider {
           );
           if (childCachedDocumentString) {
             const childCachedDocument = JSON.parse(childCachedDocumentString);
+               if (
+               minAge != null && childCachedDocument.cachedAt != null
+             ) {
+               const childAgeMs = Date.now() - childCachedDocument.cachedAt;
+               if (childAgeMs < minAge) {
+                 Logger.debug(`Cache entry too fresh (age ${childAgeMs}ms < minAge ${minAge}ms), treating as miss: ${childUrl}`);
+                 continue;
+               }
+             }
             if (
               !documents.find(
                 (doc) =>

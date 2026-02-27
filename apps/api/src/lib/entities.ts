@@ -41,6 +41,7 @@ export type PageOptions = {
   atsv?: boolean; // beta
   proxy?: "basic" | "stealth" | "enhanced";
   actions?: any[]; // Array of action objects: { type: "click" | "type" | "wait" | "scroll" | "screenshot", ... }
+  minAge?: number;
 };
 
 export type CrawlerOptions = {
