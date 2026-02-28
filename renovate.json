@@ -1,0 +1,20 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base",
+    "workarounds:nodeDockerVersioning"
+  ],
+  "packageRules": [
+    {
+      "description": "Enable npm/pnpm dependency updates",
+      "matchManagers": ["npm", "pnpm"],
+      "enabled": true
+    },
+    {
+      "description": "Pin Node.js Docker images to LTS 22 — allow patch/minor within 22.x, block 23+",
+      "matchDepNames": ["node"],
+      "matchDatasources": ["docker"],
+      "allowedVersions": "^22"
+    }
+  ]
+}
