@@ -1,4 +1,4 @@
-name: firecrawl-dev
+name: firecrawl
 
 x-common-service: &common-service
   build: apps/api
@@ -55,12 +55,12 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=docker-proxynet
-      - traefik.http.routers.firecrawl-dev.rule=Host(`${SUBDOMAIN}.${DOMAIN_NAME}`)
-      - traefik.http.routers.firecrawl-dev.tls=true
-      - traefik.http.routers.firecrawl-dev.entrypoints=web,web-secure
-      - traefik.http.routers.firecrawl-dev.tls.certresolver=tlschallenge
-      - traefik.http.services.firecrawl-dev.loadbalancer.server.port=3002
-      - traefik.http.routers.firecrawl-dev.middlewares=secHeaders@file
+      - traefik.http.routers.firecrawl.rule=Host(`${SUBDOMAIN}.${DOMAIN_NAME}`)
+      - traefik.http.routers.firecrawl.tls=true
+      - traefik.http.routers.firecrawl.entrypoints=web,web-secure
+      - traefik.http.routers.firecrawl.tls.certresolver=tlschallenge
+      - traefik.http.services.firecrawl.loadbalancer.server.port=3002
+      - traefik.http.routers.firecrawl.middlewares=secHeaders@file
      
 
     depends_on:
