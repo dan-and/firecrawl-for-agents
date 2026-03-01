@@ -328,12 +328,17 @@ export async function scrapeSingleUrl(
       }
       if (
         pageStatusCode &&
-        (pageStatusCode == 404 || pageStatusCode == 415 || pageStatusCode == 500)
+        (pageStatusCode == 415 || pageStatusCode == 500)
       ) {
         Logger.debug(
           `⛏️ ${scraper}: Stopping fallback loop for ${urlToScrape}, status code ${pageStatusCode} is terminal`
         );
         break;
+      }
+      if (pageStatusCode == 404) {
+        Logger.debug(
+          `⛏️ ${scraper}: Got 404 for ${urlToScrape}, trying next scraper (may be bot-blocking)`
+        );
       }
 
       Logger.debug(
