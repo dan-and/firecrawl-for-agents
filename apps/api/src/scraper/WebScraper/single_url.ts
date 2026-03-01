@@ -17,8 +17,30 @@ import { getForcedEngine } from "./utils/engine-forcing";
 
 dotenv.config();
 
-/** HTML larger than this byte threshold is returned as-is instead of being converted to Markdown. */
-const MAX_HTML_FOR_MARKDOWN = 300 * 1024; // 300 KB
+/**
+ * HTML larger than this byte threshold is truncated before being fed to the
+ * markdown converter. We truncate rather than bypass so that the markdown
+ * field always contains markdown — never raw HTML. Consent-wall pages that
+ * exceed this limit are typically stripped down well below it once
+ * removeUnwantedElements removes the CMP containers.
+ */
+const MAX_HTML_FOR_MARKDOWN = 500 * 1024; // 500 KB truncation limit
+
+/**
+ * Returns true if the string looks like raw HTML rather than converted markdown.
+ * Used as a quality guard after parseMarkdown() — TurndownService can silently
+ * return raw HTML when given a full <!DOCTYPE html> document (e.g. consent walls
+ * that survive removeUnwantedElements).
+ */
+function isRawHtml(text: string | null | undefined): boolean {
+  if (!text) return false;
+  const trimmed = text.trimStart();
+  return (
+    trimmed.startsWith("<!DOCTYPE") ||
+    trimmed.startsWith("<!doctype") ||
+    trimmed.startsWith("<html")
+  );
+}
 
 export const callWebhook = async (
   webhookUrls: string[],
@@ -139,6 +161,7 @@ export async function scrapeSingleUrl(
   pageOptions = {
     includeMarkdown: pageOptions.includeMarkdown ?? true,
     includeExtract: pageOptions.includeExtract ?? false,
+    includeHtml: pageOptions.includeHtml ?? false,
     includeRawHtml: pageOptions.includeRawHtml ?? false,
     waitFor: pageOptions.waitFor ?? undefined,
     screenshot: pageOptions.screenshot ?? false,
@@ -150,6 +173,7 @@ export async function scrapeSingleUrl(
     parsePDF: pageOptions.parsePDF ?? true,
     removeTags: pageOptions.removeTags ?? [],
     onlyIncludeTags: pageOptions.onlyIncludeTags ?? [],
+    onlyMainContent: pageOptions.onlyMainContent ?? true,
     useFastMode: pageOptions.useFastMode ?? false,
     disableJsDom: pageOptions.disableJsDom ?? false,
     atsv: pageOptions.atsv ?? false,
@@ -209,10 +233,15 @@ export async function scrapeSingleUrl(
     }
 
     let cleanedHtml = removeUnwantedElements(scraperResponse.text, pageOptions);
-    const text =
-      cleanedHtml.length > MAX_HTML_FOR_MARKDOWN
-        ? cleanedHtml
-        : await parseMarkdown(cleanedHtml);
+    // Truncate oversized HTML before conversion — never bypass conversion
+    // (bypassing would leave raw HTML in the markdown field).
+    const htmlForMarkdown = cleanedHtml.length > MAX_HTML_FOR_MARKDOWN
+      ? cleanedHtml.slice(0, MAX_HTML_FOR_MARKDOWN)
+      : cleanedHtml;
+    const rawText = await parseMarkdown(htmlForMarkdown);
+    // Quality guard: if conversion produced raw HTML (e.g. consent wall bypass
+    // or TurndownService failure on a full DOCTYPE page), treat as empty.
+    const text = isRawHtml(rawText) ? "" : rawText;
 
     return {
       text,
@@ -260,10 +289,11 @@ export async function scrapeSingleUrl(
       ) {
         rawHtml = existingHtml;
         let cleanedHtml = removeUnwantedElements(existingHtml, pageOptions);
-        text =
-          cleanedHtml.length > MAX_HTML_FOR_MARKDOWN
-            ? cleanedHtml
-            : await parseMarkdown(cleanedHtml);
+        const htmlForMd = cleanedHtml.length > MAX_HTML_FOR_MARKDOWN
+          ? cleanedHtml.slice(0, MAX_HTML_FOR_MARKDOWN)
+          : cleanedHtml;
+        const rawTextExisting = await parseMarkdown(htmlForMd);
+        text = isRawHtml(rawTextExisting) ? "" : rawTextExisting;
         html = cleanedHtml;
         break;
       }
@@ -355,7 +385,7 @@ export async function scrapeSingleUrl(
           pageOptions.includeMarkdown || pageOptions.includeExtract
             ? text
             : undefined,
-        html: pageOptions.includeRawHtml ? html : undefined,
+        html: pageOptions.includeHtml || pageOptions.includeRawHtml ? html : undefined,
         rawHtml: pageOptions.includeRawHtml ? rawHtml : undefined,
         linksOnPage: pageOptions.includeLinks ? linksOnPage : undefined,
         metadata: {
@@ -375,7 +405,7 @@ export async function scrapeSingleUrl(
           pageOptions.includeMarkdown || pageOptions.includeExtract
             ? text
             : undefined,
-        html: pageOptions.includeRawHtml ? html : undefined,
+        html: pageOptions.includeHtml || pageOptions.includeRawHtml ? html : undefined,
         rawHtml: pageOptions.includeRawHtml ? rawHtml : undefined,
         metadata: {
           ...metadata,
@@ -412,7 +442,8 @@ export async function scrapeSingleUrl(
         pageOptions.includeMarkdown || pageOptions.includeExtract
           ? ""
           : undefined,
-      html: "",
+      html: pageOptions.includeHtml || pageOptions.includeRawHtml ? "" : undefined,
+      rawHtml: pageOptions.includeRawHtml ? "" : undefined,
       linksOnPage: pageOptions.includeLinks ? [] : undefined,
       metadata: {
         sourceURL: urlToScrape,
