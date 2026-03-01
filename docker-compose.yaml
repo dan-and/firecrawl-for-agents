@@ -1,4 +1,4 @@
-name: firecrawl
+name: firecrawl-dev
 
 x-common-service: &common-service
   build: apps/api
@@ -8,6 +8,7 @@ x-common-service: &common-service
       hard: 1048576
   networks:
     - backend
+    - traefik-servicenet
   environment:
     - REDIS_URL=${REDIS_URL:-redis://redis:6379}
     - REDIS_RATE_LIMIT_URL=${REDIS_URL:-redis://redis:6379}
@@ -19,15 +20,14 @@ x-common-service: &common-service
     - TEST_API_KEY=${TEST_API_KEY}
     - HOST=${HOST:-0.0.0.0}
     - LOGGING_LEVEL=${LOGGING_LEVEL}
-    - MAX_RAM=${MAX_RAM:-0.95}
-    - MAX_CPU=${MAX_CPU:-0.95}
+    - MAX_RAM=${MAX_RAM:-0.60}
+    - MAX_CPU=${MAX_CPU:-0.40}
     - NODE_EXTRA_CA_CERTS=/etc/ssl/certs/ca-certificates.crt
   extra_hosts:
     - "host.docker.internal:host-gateway"
 
 services:
   puppeteer-service:
-    image: trieve/puppeteer-service-ts
     build:
       context: ./apps/puppeteer-service-ts/
       dockerfile: Dockerfile
@@ -42,18 +42,37 @@ services:
       - PROXY_PASSWORD=${PROXY_PASSWORD}
       - TWOCAPTCHA_TOKEN=${TWOCAPTCHA_TOKEN}
       - MAX_CONCURRENCY=${MAX_CONCURRENCY}
+    restart: unless-stopped
     networks:
       - backend
+      - traefik-servicenet
 
   api:
-    image: trieve/firecrawl
+    build: 
+      context: ./apps/api/
+      dockerfile: Dockerfile
     <<: *common-service
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=docker-proxynet
+      - traefik.http.routers.firecrawl-dev.rule=Host(`${SUBDOMAIN}.${DOMAIN_NAME}`)
+      - traefik.http.routers.firecrawl-dev.tls=true
+      - traefik.http.routers.firecrawl-dev.entrypoints=web,web-secure
+      - traefik.http.routers.firecrawl-dev.tls.certresolver=tlschallenge
+      - traefik.http.services.firecrawl-dev.loadbalancer.server.port=3002
+      - traefik.http.routers.firecrawl-dev.middlewares=secHeaders@file
+     
+
     depends_on:
       - redis
       - puppeteer-service
     ports:
-      - "3002:3002"
+      - "127.0.0.1:3002:3002"
     command: ["pnpm", "run", "start:production"]
+    networks:
+      - backend
+      - traefik-servicenet
+      - docker-proxynet
 
   worker:
     <<: *common-service
@@ -61,14 +80,23 @@ services:
       - redis
       - puppeteer-service
       - api
+    deploy:
+      replicas: 1
     command: ["pnpm", "run", "workers"]
 
   redis:
     image: redis:alpine
     networks:
       - backend
+      - traefik-servicenet
     command: redis-server --bind 0.0.0.0
 
 networks:
   backend:
     driver: bridge
+  docker-proxynet:
+     external: true
+     name: docker-proxynet
+  traefik-servicenet:
+     external: true           # this network has to be created once before starting:
+     name: traefik-servicenet
