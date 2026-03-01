@@ -24,6 +24,7 @@ export type ScrapeAction = any;
 export type PageOptions = {
   includeMarkdown?: boolean;
   includeExtract?: boolean;
+  includeHtml?: boolean;
   includeRawHtml?: boolean;
   fallback?: boolean;
   fetchPageContent?: boolean;
@@ -35,6 +36,7 @@ export type PageOptions = {
   parsePDF?: boolean;
   removeTags?: string | string[];
   onlyIncludeTags?: string | string[];
+  onlyMainContent?: boolean;
   includeLinks?: boolean;
   useFastMode?: boolean; // beta
   disableJsDom?: boolean; // beta

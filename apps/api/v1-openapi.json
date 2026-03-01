@@ -394,10 +394,10 @@
                         "type": "array",
                         "items": {
                           "type": "string",
-                          "enum": ["markdown", "rawHtml", "screenshot"]
+                          "enum": ["markdown", "html", "rawHtml", "links", "screenshot"]
                         },
                         "description": "Formats to include in the output.",
-                        "default": ["markdown", "rawHtml"]
+                        "default": ["markdown"]
                       },
                       "headers": {
                         "type": "object",
@@ -724,10 +724,15 @@
                 "markdown": {
                   "type": "string"
                 },
+                "html": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "Cleaned HTML content of the page if `html` is in `formats`"
+                },
                 "rawHtml": {
                   "type": "string",
                   "nullable": true,
-                  "description": "Raw HTML content of the page if `includeRawHtml`  is true"
+                  "description": "Raw HTML content of the page if `rawHtml` is in `formats`"
                 },
                 "links": {
                   "type": "array",

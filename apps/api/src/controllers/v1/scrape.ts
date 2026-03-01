@@ -129,8 +129,14 @@ export async function scrapeController(
   delete doc.provider;
 
   if (!pageOptions || !pageOptions.includeRawHtml) {
-    if (doc && doc.rawHtml) {
+    if (doc && doc.rawHtml !== undefined) {
       delete doc.rawHtml;
+    }
+  }
+
+  if (!pageOptions || !pageOptions.includeHtml) {
+    if (doc && doc.html !== undefined) {
+      delete doc.html;
     }
   }
 

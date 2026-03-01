@@ -120,10 +120,16 @@ export async function crawlStatusController(req: RequestWithAuth<CrawlStatusPara
   }
 
   if (data.length > 0) {
-    if (!doneJobs[0].data.pageOptions.includeRawHtml) {
+    const pageOptions = doneJobs[0].data.pageOptions;
+    if (!pageOptions.includeRawHtml || !pageOptions.includeHtml) {
       for (let ii = 0; ii < doneJobs.length; ii++) {
         if (data[ii]) {
-          delete data[ii].rawHtml;
+          if (!pageOptions.includeRawHtml) {
+            delete data[ii].rawHtml;
+          }
+          if (!pageOptions.includeHtml) {
+            delete data[ii].html;
+          }
         }
       }
     }

@@ -4,7 +4,7 @@ import { PageOptions } from "../../lib/entities";
 import { protocolIncluded, checkUrl } from "../../lib/validateUrl";
 import { PlanType } from "../../types";
 
-export type Format = "markdown" | "rawHtml" | "screenshot";
+export type Format = "markdown" | "html" | "rawHtml" | "links" | "screenshot";
 
 export const url = z.preprocess(
   (x) => {
@@ -49,13 +49,14 @@ export type ScrapeAction = any;
 export const scrapeOptions = z
   .object({
     formats: z
-      .enum(["markdown", "rawHtml", "screenshot"])
+      .enum(["markdown", "html", "rawHtml", "links", "screenshot"])
       .array()
       .optional()
-      .default(["markdown", "rawHtml"]),
+      .default(["markdown"]),
     headers: z.record(z.string(), z.string()).optional(),
     includeTags: z.string().array().optional(),
     excludeTags: z.string().array().optional(),
+    onlyMainContent: z.boolean().default(true),
     timeout: z.number().int().positive().finite().safe().default(30000),
     waitFor: z.number().int().nonnegative().finite().safe().default(0),
     extract: extractOptions.optional(),
@@ -267,9 +268,12 @@ export function legacyCrawlerOptions(x: CrawlerOptions) {
 export function legacyScrapeOptions(x: ScrapeOptions): PageOptions {
   return {
     includeMarkdown: x.formats.includes("markdown"),
+    includeHtml: x.formats.includes("html"),
     includeRawHtml: x.formats.includes("rawHtml"),
+    includeLinks: x.formats.includes("links"),
     onlyIncludeTags: x.includeTags,
     removeTags: x.excludeTags,
+    onlyMainContent: x.onlyMainContent,
     waitFor: x.waitFor,
     headers: x.headers,
     screenshot: x.formats.includes("screenshot"),
@@ -296,7 +300,12 @@ export function legacyDocumentConverter(doc: any): Document {
 
   return {
     markdown: doc.markdown,
-    links: doc.linksOnPage ? doc.linksOnPage.filter((x: any) => x !== null) : [],
+    // Only emit the links key when linksOnPage was actually populated (i.e. the
+    // "links" format was requested). An empty array here would leak an unexpected
+    // key on every response regardless of what the caller asked for.
+    ...(doc.linksOnPage != null
+      ? { links: doc.linksOnPage.filter((x: any) => x !== null) }
+      : {}),
     rawHtml: doc.rawHtml,
     html: doc.html,
     extract: doc.llm_extraction,
