@@ -4,6 +4,7 @@ import { Logger } from "../../../lib/logger";
 import { isDOCXUrl, parseDOCXBuffer } from "./docx";
 import { isDOCUrl, parseDOCBuffer } from "./doc";
 import { isSpreadsheetUrl, parseSpreadsheetBuffer } from "./xlsx";
+import { extractPDFText } from "./pdf";
 
 function isPDFContent(content: string): boolean {
   if (!content || typeof content !== "string") {
@@ -134,7 +135,7 @@ export async function scrapeWithFetch(
       }
     }
 
-    const { statusCode, body } = await request(url, {
+    const { statusCode, headers, body } = await request(url, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -160,15 +161,67 @@ export async function scrapeWithFetch(
       };
     }
 
-    if (isPDFContent(text)) {
-      Logger.debug(
-        `⛏️ fetch: Detected PDF content for ${url}, skipping PDF processing`
-      );
-      return {
-        content: "",
-        pageStatusCode: statusCode,
-        pageError: "PDF content detected - not suitable for text extraction",
-      };
+    // Detect PDF by Content-Type header first, then fall back to body signature
+    const contentType = ((headers["content-type"] as string) || "").toLowerCase();
+    const isPDF = contentType.includes("application/pdf") || isPDFContent(text);
+
+    if (isPDF) {
+      if (!parsePDF) {
+        // parsePDF=false: skip silently (used by crawler to filter PDF links)
+        Logger.debug(`⛏️ fetch: PDF detected for ${url}, parsePDF=false — skipping`);
+        return {
+          content: "",
+          pageStatusCode: statusCode,
+          pageError: "PDF content skipped (parsePDF=false)",
+        };
+      }
+
+      // parsePDF=true (default): re-fetch as raw bytes and extract text
+      // We must re-fetch because body.text() above garbles binary data.
+      Logger.debug(`⛏️ fetch: PDF detected for ${url}, attempting text extraction`);
+      try {
+        const pdfResp = await request(url, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "User-Agent":
+              "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+          },
+          headersTimeout: universalTimeout,
+          bodyTimeout: universalTimeout,
+        });
+        const pdfBytes = await pdfResp.body.bytes();
+        const extracted = await extractPDFText(Buffer.from(pdfBytes));
+
+        if (extracted.hasText) {
+          Logger.debug(
+            `⛏️ fetch: Extracted ${extracted.text.length} chars from ${extracted.pageCount}-page PDF at ${url}`
+          );
+          return {
+            content: extracted.text,
+            pageStatusCode: statusCode,
+            pageError: null,
+          };
+        } else {
+          Logger.debug(
+            `⛏️ fetch: PDF at ${url} has ${extracted.pageCount} pages but no extractable text (likely a scanned image)`
+          );
+          return {
+            content: "",
+            pageStatusCode: statusCode,
+            pageError:
+              "PDF appears to be a scanned image with no extractable text. " +
+              "Deploy a PDF OCR sidecar (see dan_documentations/pdf-to-markdown-analysis.md) to enable OCR.",
+          };
+        }
+      } catch (pdfError) {
+        Logger.debug(`⛏️ fetch: PDF extraction failed for ${url}: ${pdfError}`);
+        return {
+          content: "",
+          pageStatusCode: statusCode,
+          pageError: `PDF extraction failed: ${(pdfError as Error).message || String(pdfError)}`,
+        };
+      }
     }
 
     Logger.debug(

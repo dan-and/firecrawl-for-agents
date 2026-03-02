@@ -1,11 +1,15 @@
 // Jest auto-mocks undici when we call jest.mock. We define what each mock returns
 // per test using mockResolvedValueOnce / mockRejectedValueOnce.
 jest.mock("undici");
+// Mock pdf module to prevent unpdf ESM bundle loading in Jest's CJS sandbox
+jest.mock("../pdf");
 
 import { request } from "undici";
+import { extractPDFText } from "../pdf";
 import { scrapeWithFetch } from "../fetch";
 
 const mockRequest = request as jest.MockedFunction<typeof request>;
+const mockExtractPDFText = extractPDFText as jest.MockedFunction<typeof extractPDFText>;
 
 // Helper: build a fake undici response body that returns the given text
 function fakeBody(text: string) {
@@ -77,17 +81,45 @@ describe("scrapeWithFetch", () => {
 
   // ── PDF detection ─────────────────────────────────────────────────────────
 
-  it("returns empty content when response starts with %PDF-", async () => {
+  it("returns empty content with parsePDF=false when response starts with %PDF-", async () => {
     mockRequest.mockResolvedValueOnce({
       statusCode: 200,
       headers: {},
       body: fakeBody("%PDF-1.4 binary content here\nobj\nendobj"),
     } as any);
 
-    const result = await scrapeWithFetch("https://example.com/doc.pdf");
+    const result = await scrapeWithFetch("https://example.com/doc.pdf", false);
 
     expect(result.content).toBe("");
-    expect(result.pageError).toContain("PDF");
+    expect(result.pageError).toMatch(/parsePDF=false/);
+  });
+
+  it("extracts text from PDF when parsePDF=true (default)", async () => {
+    // First request: triggers PDF detection via %PDF- signature
+    mockRequest
+      .mockResolvedValueOnce({
+        statusCode: 200,
+        headers: {},
+        body: fakeBody("%PDF-1.4 binary content here\nobj\nendobj"),
+      } as any)
+      // Second request: the binary re-fetch
+      .mockResolvedValueOnce({
+        statusCode: 200,
+        headers: {},
+        body: { text: async () => "", bytes: async () => Buffer.from("%PDF-binary") } as any,
+      } as any);
+
+    mockExtractPDFText.mockResolvedValue({
+      text: "Extracted PDF content here",
+      pageCount: 2,
+      hasText: true,
+    });
+
+    const result = await scrapeWithFetch("https://example.com/doc.pdf", true);
+
+    expect(result.content).toBe("Extracted PDF content here");
+    expect(result.pageStatusCode).toBe(200);
+    expect(result.pageError).toBeNull();
   });
 
   // ── Timeout errors ────────────────────────────────────────────────────────

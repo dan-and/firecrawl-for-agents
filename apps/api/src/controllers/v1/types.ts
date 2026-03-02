@@ -63,6 +63,7 @@ export const scrapeOptions = z
     proxy: z.enum(["basic", "stealth", "enhanced"]).optional(),
     actions: z.array(z.any()).optional(), // Array of browser action objects
     minAge: z.number().int().min(0).optional(),
+    parsePDF: z.boolean().default(true),
   })
   .strict(strictMessage);
 
@@ -287,6 +288,7 @@ export function legacyScrapeOptions(x: ScrapeOptions): PageOptions {
     proxy: x.proxy,
     actions: x.actions,
     minAge: x.minAge,
+    parsePDF: x.parsePDF,
   };
 }
 

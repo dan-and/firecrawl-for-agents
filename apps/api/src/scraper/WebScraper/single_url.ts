@@ -224,7 +224,7 @@ export async function scrapeSingleUrl(
       }
       case "fetch": {
         console.log("DEBUG single_url: about to call scrapeWithFetch");
-        const response = await scrapeWithFetch(url);
+        const response = await scrapeWithFetch(url, pageOptions.parsePDF ?? true);
         scraperResponse.text = response.content;
         scraperResponse.metadata.pageStatusCode = response.pageStatusCode;
         scraperResponse.metadata.pageError = response.pageError;
