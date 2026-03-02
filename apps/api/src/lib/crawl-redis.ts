@@ -110,11 +110,28 @@ export async function getCrawlJobs(id: string): Promise<string[]> {
   return await redis.smembers("crawl:" + id + ":jobs");
 }
 
+export function normalizeURL(url: string, sc: StoredCrawl): string {
+  const urlO = new URL(url);
+  if (sc && sc.crawlerOptions && sc.crawlerOptions.ignoreQueryParameters) {
+    urlO.search = "";
+  }
+  // allow hash-based routes (e.g. #/ and #!/), strip all other hashes
+  if (
+    !urlO.hash ||
+    urlO.hash.length <= 2 ||
+    (!urlO.hash.startsWith("#/") && !urlO.hash.startsWith("#!/"))
+  ) {
+    urlO.hash = "";
+  }
+  return urlO.href;
+}
+
 export async function lockURL(
   id: string,
   sc: StoredCrawl,
   url: string,
 ): Promise<boolean> {
+  url = normalizeURL(url, sc);
   const redis = getRedisConnection();
   if (typeof sc.crawlerOptions?.limit === "number") {
     if (
@@ -146,6 +163,7 @@ export async function lockURL(
 
 /// NOTE: does not check limit. only use if limit is checked beforehand e.g. with sitemap
 export async function lockURLs(id: string, sc: StoredCrawl, urls: string[]): Promise<boolean> {
+  urls = urls.map(url => normalizeURL(url, sc));
   const redis = getRedisConnection();
   let res: boolean;
   if (!sc.crawlerOptions?.deduplicateSimilarURLs) {
@@ -249,6 +267,8 @@ export function crawlToCrawler(id: string, sc: StoredCrawl): WebCrawler {
     limit: sc.crawlerOptions?.limit ?? 10000,
     allowExternalLinks: sc.crawlerOptions?.allowExternalLinks ?? false,
     crawlId: id,
+    maxDiscoveryDepth: sc.crawlerOptions?.maxDiscoveryDepth,
+    currentDiscoveryDepth: sc.crawlerOptions?.currentDiscoveryDepth ?? 0,
   });
 
   if (sc.robots !== undefined) {

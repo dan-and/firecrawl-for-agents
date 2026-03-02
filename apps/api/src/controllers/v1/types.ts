@@ -97,6 +97,9 @@ const crawlerOptions = z
     ignoreSitemap: z.boolean().default(true),
     regexOnFullUrl: z.boolean().default(true), // true = match against full URL, false = path only
     sitemapOnly: z.boolean().default(false), // only scrape URLs from sitemap, fallback to single URL if no sitemap
+    maxDiscoveryDepth: z.number().int().min(0).optional(), // max link-hops from seed URL (hop-based, not path-based)
+    currentDiscoveryDepth: z.number().int().min(0).optional(), // internal: current hop depth, incremented per child job
+    ignoreQueryParameters: z.boolean().default(false), // treat URLs differing only in query params as duplicates
   })
   .strict(strictMessage);
 
@@ -123,6 +126,7 @@ export const mapRequestSchema = crawlerOptions
     search: z.string().optional(),
     ignoreSitemap: z.boolean().default(true),
     ignoreCache: z.boolean().default(false),
+    ignoreQueryParameters: z.boolean().default(true), // default true for map (deduplicate query-param variants)
     limit: z.number().min(1).max(5000).default(5000).optional(),
   })
   .strict(strictMessage);
@@ -262,6 +266,9 @@ export function legacyCrawlerOptions(x: CrawlerOptions) {
     allowExternalLinks: x.allowExternalLinks,
     regexOnFullUrl: x.regexOnFullUrl,
     sitemapOnly: x.sitemapOnly,
+    maxDiscoveryDepth: x.maxDiscoveryDepth,
+    currentDiscoveryDepth: x.currentDiscoveryDepth ?? 0,
+    ignoreQueryParameters: x.ignoreQueryParameters,
   };
 }
 

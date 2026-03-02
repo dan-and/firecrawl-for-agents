@@ -153,4 +153,50 @@ describe("WebCrawler", () => {
       expect(crawler).toBeDefined();
     });
   });
+
+  describe("maxDiscoveryDepth", () => {
+    const makeCrawler = (maxDiscoveryDepth?: number, currentDiscoveryDepth = 0) =>
+      new WebCrawler({
+        jobId: "TEST",
+        initialUrl: "https://example.com",
+        includes: [],
+        excludes: [],
+        maxCrawledDepth: 10,
+        limit: 100,
+        allowExternalLinks: false,
+        crawlId: "TEST",
+        maxDiscoveryDepth,
+        currentDiscoveryDepth,
+      });
+
+    it("maxDiscoveryDepth undefined: filterURL passes links at any depth", () => {
+      const crawler = makeCrawler(undefined, 99);
+      expect(crawler.filterURL("https://example.com/page")).not.toBeNull();
+    });
+
+    it("maxDiscoveryDepth=0, currentDepth=0: filterURL rejects all links (seed only)", () => {
+      const crawler = makeCrawler(0, 0);
+      expect(crawler.filterURL("https://example.com/page")).toBeNull();
+    });
+
+    it("maxDiscoveryDepth=1, currentDepth=0: filterURL passes links (first hop allowed)", () => {
+      const crawler = makeCrawler(1, 0);
+      expect(crawler.filterURL("https://example.com/page")).not.toBeNull();
+    });
+
+    it("maxDiscoveryDepth=1, currentDepth=1: filterURL rejects links (depth reached)", () => {
+      const crawler = makeCrawler(1, 1);
+      expect(crawler.filterURL("https://example.com/page")).toBeNull();
+    });
+
+    it("maxDiscoveryDepth=2, currentDepth=1: filterURL passes links (still within limit)", () => {
+      const crawler = makeCrawler(2, 1);
+      expect(crawler.filterURL("https://example.com/page")).not.toBeNull();
+    });
+
+    it("maxDiscoveryDepth=2, currentDepth=2: filterURL rejects links (limit reached)", () => {
+      const crawler = makeCrawler(2, 2);
+      expect(crawler.filterURL("https://example.com/page")).toBeNull();
+    });
+  });
 });

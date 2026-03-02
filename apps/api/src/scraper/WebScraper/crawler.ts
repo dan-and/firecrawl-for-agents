@@ -28,6 +28,8 @@ export class WebCrawler {
   private robotsTxtUrl: string;
   public robots: any;
   private allowExternalLinks: boolean;
+  private maxDiscoveryDepth: number | undefined;
+  private currentDiscoveryDepth: number;
 
   constructor({
     jobId,
@@ -40,6 +42,8 @@ export class WebCrawler {
     allowExternalLinks = false,
     crawlId,
     crawlerOptions,
+    maxDiscoveryDepth,
+    currentDiscoveryDepth = 0,
   }: {
     jobId: string;
     initialUrl: string;
@@ -51,6 +55,8 @@ export class WebCrawler {
     allowExternalLinks?: boolean;
     crawlId: string;
     crawlerOptions?: { regexOnFullUrl?: boolean };
+    maxDiscoveryDepth?: number;
+    currentDiscoveryDepth?: number;
   }) {
     this.jobId = jobId;
     this.initialUrl = initialUrl;
@@ -66,6 +72,8 @@ export class WebCrawler {
     this.allowExternalLinks = allowExternalLinks ?? false;
     this.crawlId = crawlId;
     this.regexOnFullUrl = crawlerOptions?.regexOnFullUrl ?? true;
+    this.maxDiscoveryDepth = maxDiscoveryDepth;
+    this.currentDiscoveryDepth = currentDiscoveryDepth ?? 0;
   }
 
   public setBaseUrl(newBase: string): void {
@@ -235,6 +243,14 @@ export class WebCrawler {
   }
 
   public filterURL(href: string): string | null {
+    // If maxDiscoveryDepth is set and we've already reached it, reject all new links
+    if (
+      this.maxDiscoveryDepth !== undefined &&
+      this.currentDiscoveryDepth >= this.maxDiscoveryDepth
+    ) {
+      return null;
+    }
+
     let fullUrl = href;
     let urlObj: URL;
     try {

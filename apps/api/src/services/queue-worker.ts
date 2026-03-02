@@ -231,7 +231,10 @@ async function processJob(job: Job, token: string) {
                 {
                   url: link,
                   mode: "single_urls",
-                  crawlerOptions: sc.crawlerOptions,
+                  crawlerOptions: {
+                    ...sc.crawlerOptions,
+                    currentDiscoveryDepth: (sc.crawlerOptions?.currentDiscoveryDepth ?? 0) + 1,
+                  },
                   team_id: sc.team_id,
                   pageOptions: sc.pageOptions,
                   webhookUrls: job.data.webhookUrls,
