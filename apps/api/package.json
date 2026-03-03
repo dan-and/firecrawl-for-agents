@@ -67,6 +67,7 @@
     "joplin-turndown-plugin-gfm": "^1.0.12",
     "koffi": "^2.9.0",
     "mammoth": "^1.11.0",
+    "openai": "^6.25.0",
     "puppeteer": "^22.12.1",
     "rate-limiter-flexible": "2.4.2",
     "redlock": "5.0.0-beta.2",

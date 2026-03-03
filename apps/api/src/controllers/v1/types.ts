@@ -64,6 +64,7 @@ export const scrapeOptions = z
     actions: z.array(z.any()).optional(), // Array of browser action objects
     minAge: z.number().int().min(0).optional(),
     parsePDF: z.boolean().default(true),
+    onlyCleanContent: z.boolean().default(false),
   })
   .strict(strictMessage);
 
@@ -289,6 +290,7 @@ export function legacyScrapeOptions(x: ScrapeOptions): PageOptions {
     actions: x.actions,
     minAge: x.minAge,
     parsePDF: x.parsePDF,
+    onlyCleanContent: x.onlyCleanContent,
   };
 }
 

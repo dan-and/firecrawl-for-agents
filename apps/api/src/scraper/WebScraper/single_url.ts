@@ -3,6 +3,7 @@ import { extractMetadata } from "./utils/metadata";
 import dotenv from "dotenv";
 import { Document, PageOptions } from "../../lib/entities";
 import { parseMarkdown } from "../../lib/html-to-markdown";
+import { cleanContent } from "../../lib/cleanContent";
 import { urlSpecificParams } from "./utils/custom/website_params";
 import { removeUnwantedElements } from "./utils/removeUnwantedElements";
 import { scrapeWithFetch } from "./scrapers/fetch";
@@ -241,7 +242,11 @@ export async function scrapeSingleUrl(
     const rawText = await parseMarkdown(htmlForMarkdown);
     // Quality guard: if conversion produced raw HTML (e.g. consent wall bypass
     // or TurndownService failure on a full DOCTYPE page), treat as empty.
-    const text = isRawHtml(rawText) ? "" : rawText;
+    const parsedText = isRawHtml(rawText) ? "" : rawText;
+    const text =
+      pageOptions.onlyCleanContent && parsedText.length > 0
+        ? await cleanContent(parsedText, urlToScrape)
+        : parsedText;
 
     return {
       text,
@@ -293,7 +298,11 @@ export async function scrapeSingleUrl(
           ? cleanedHtml.slice(0, MAX_HTML_FOR_MARKDOWN)
           : cleanedHtml;
         const rawTextExisting = await parseMarkdown(htmlForMd);
-        text = isRawHtml(rawTextExisting) ? "" : rawTextExisting;
+        const parsedTextExisting = isRawHtml(rawTextExisting) ? "" : rawTextExisting;
+        text =
+          pageOptions.onlyCleanContent && parsedTextExisting.length > 0
+            ? await cleanContent(parsedTextExisting, urlToScrape)
+            : parsedTextExisting;
         html = cleanedHtml;
         break;
       }
