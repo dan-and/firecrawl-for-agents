@@ -3,6 +3,7 @@ import { universalTimeout } from "../global";
 import { Logger } from "../../../lib/logger";
 import { isDOCXUrl, parseDOCXBuffer } from "./docx";
 import { isDOCUrl, parseDOCBuffer } from "./doc";
+import { isOfficeUrl, parseOfficeBuffer } from "./office";
 import { isSpreadsheetUrl, parseSpreadsheetBuffer } from "./xlsx";
 import { extractPDFText } from "./pdf";
 
@@ -131,6 +132,42 @@ export async function scrapeWithFetch(
           content: "",
           pageStatusCode: docResp.statusCode,
           pageError: `Legacy .doc parse error: ${(docErr as Error).message}`,
+        };
+      }
+    }
+
+    if (isOfficeUrl(url)) {
+      Logger.debug(`⛏️ fetch: Office document URL detected, fetching as binary: ${url}`);
+      const officeResp = await request(url, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "User-Agent":
+            "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)",
+        },
+        headersTimeout: universalTimeout,
+        bodyTimeout: universalTimeout,
+      });
+
+      if (officeResp.statusCode !== 200) {
+        return {
+          content: "",
+          pageStatusCode: officeResp.statusCode,
+          pageError: `HTTP ${officeResp.statusCode}`,
+        };
+      }
+
+      try {
+        const officeBytes = await officeResp.body.bytes();
+        const html = await parseOfficeBuffer(Buffer.from(officeBytes));
+        Logger.debug(`⛏️ fetch: Office document parsed (${html.length} chars)`);
+        return { content: html, pageStatusCode: officeResp.statusCode, pageError: null };
+      } catch (officeErr) {
+        Logger.debug(`⛏️ fetch: Office parse failed: ${officeErr}`);
+        return {
+          content: "",
+          pageStatusCode: officeResp.statusCode,
+          pageError: `Office document parse error: ${(officeErr as Error).message}`,
         };
       }
     }
