@@ -1,27 +1,18 @@
 import OpenAI from "openai";
 import { Logger } from "./logger";
 
-let _client: OpenAI | null = null;
-
-function getClient(): OpenAI | null {
-  if (!process.env.OPENAI_API_KEY) return null;
-  if (!_client) {
-    _client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  }
-  return _client;
-}
-
 /**
  * Passes Markdown through an LLM to strip boilerplate (nav, footer, ads, banners)
  * and return only the main article content.
  * Returns the original markdown unchanged if OPENAI_API_KEY is not set.
  */
 export async function cleanContent(markdown: string, url: string): Promise<string> {
-  const client = getClient();
-  if (!client) {
+  if (!process.env.OPENAI_API_KEY) {
     Logger.debug("cleanContent: OPENAI_API_KEY not set, returning raw markdown");
     return markdown;
   }
+
+  const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
   try {
     const response = await client.chat.completions.create({
