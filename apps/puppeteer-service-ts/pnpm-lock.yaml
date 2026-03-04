@@ -51,8 +51,8 @@ importers:
         specifier: ^4.19.2
         version: 4.21.1
       playwright-core:
-        specifier: ^1.48.2
-        version: 1.48.2
+        specifier: ^1.58.2
+        version: 1.58.2
       puppeteer:
         specifier: ^23.6.1
         version: 23.7.0(typescript@5.6.3)
@@ -1092,8 +1092,8 @@ packages:
   picocolors@1.1.1:
     resolution: {integrity: sha512-xceH2snhtb5M9liqDsmEw56le376mTZkEX/jEb/RxNFyegNul7eNslCXP9FDj/Lcu0X8KEyMceP2ntpaHrDEVA==}
 
-  playwright-core@1.48.2:
-    resolution: {integrity: sha512-sjjw+qrLFlriJo64du+EK0kJgZzoQPsabGF4lBvsid+3CNIZIYLgnMj9V6JY5VhM2Peh20DJWIVpVljLLnlawA==}
+  playwright-core@1.58.2:
+    resolution: {integrity: sha512-yZkEtftgwS8CsfYo7nm0KE8jsvm6i/PTgVtB8DL726wNf6H2IMsDuxCpJj59KDaxCtSnrWan2AeDqM7JBaultg==}
     engines: {node: '>=18'}
     hasBin: true
 
@@ -2645,7 +2645,7 @@ snapshots:
 
   picocolors@1.1.1: {}
 
-  playwright-core@1.48.2: {}
+  playwright-core@1.58.2: {}
 
   prebuild-install@7.1.2:
     dependencies:
