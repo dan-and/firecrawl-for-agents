@@ -6,13 +6,16 @@ import {
 import { getRedisConnection } from "../../services/queue-service";
 import { PlanType } from "../../types";
 
+// Create a persistent mock redis instance
+const mockRedis = {
+  sadd: jest.fn(),
+  srem: jest.fn(),
+  scard: jest.fn(),
+  expire: jest.fn(),
+};
+
 jest.mock("../../services/queue-service", () => ({
-  getRedisConnection: jest.fn(() => ({
-    sadd: jest.fn(),
-    srem: jest.fn(),
-    scard: jest.fn(),
-    expire: jest.fn(),
-  })),
+  getRedisConnection: jest.fn(() => mockRedis),
 }));
 
 describe("Job Priority Tests", () => {
@@ -24,11 +27,11 @@ describe("Job Priority Tests", () => {
     const team_id = "team1";
     const job_id = "job1";
     await addJobPriority(team_id, job_id);
-    expect(getRedisConnection().sadd).toHaveBeenCalledWith(
+    expect(mockRedis.sadd).toHaveBeenCalledWith(
       `limit_team_id:${team_id}`,
       job_id
     );
-    expect(getRedisConnection().expire).toHaveBeenCalledWith(
+    expect(mockRedis.expire).toHaveBeenCalledWith(
       `limit_team_id:${team_id}`,
       60
     );
@@ -38,7 +41,7 @@ describe("Job Priority Tests", () => {
     const team_id = "team1";
     const job_id = "job1";
     await deleteJobPriority(team_id, job_id);
-    expect(getRedisConnection().srem).toHaveBeenCalledWith(
+    expect(mockRedis.srem).toHaveBeenCalledWith(
       `limit_team_id:${team_id}`,
       job_id
     );
@@ -47,12 +50,12 @@ describe("Job Priority Tests", () => {
   test("getJobPriority should return correct priority based on plan and set length", async () => {
     const team_id = "team1";
     const plan: PlanType = "standard";
-    (getRedisConnection().scard as jest.Mock).mockResolvedValue(150);
+    mockRedis.scard.mockResolvedValue(150);
 
     const priority = await getJobPriority({ plan, team_id });
     expect(priority).toBe(10);
 
-    (getRedisConnection().scard as jest.Mock).mockResolvedValue(250);
+    mockRedis.scard.mockResolvedValue(250);
     const priorityExceeded = await getJobPriority({ plan, team_id });
     expect(priorityExceeded).toBe(20); // basePriority + Math.ceil((250 - 200) * 0.4)
   });
@@ -60,22 +63,22 @@ describe("Job Priority Tests", () => {
   test("getJobPriority should handle different plans correctly", async () => {
     const team_id = "team1";
 
-    (getRedisConnection().scard as jest.Mock).mockResolvedValue(50);
+    mockRedis.scard.mockResolvedValue(50);
     let plan: PlanType = "hobby";
     let priority = await getJobPriority({ plan, team_id });
     expect(priority).toBe(10);
 
-    (getRedisConnection().scard as jest.Mock).mockResolvedValue(150);
+    mockRedis.scard.mockResolvedValue(150);
     plan = "hobby";
     priority = await getJobPriority({ plan, team_id });
     expect(priority).toBe(25); // basePriority + Math.ceil((150 - 50) * 0.3)
 
-    (getRedisConnection().scard as jest.Mock).mockResolvedValue(25);
+    mockRedis.scard.mockResolvedValue(25);
     plan = "free";
     priority = await getJobPriority({ plan, team_id });
     expect(priority).toBe(10);
 
-    (getRedisConnection().scard as jest.Mock).mockResolvedValue(60);
+    mockRedis.scard.mockResolvedValue(60);
     plan = "free";
     priority = await getJobPriority({ plan, team_id });
     expect(priority).toBe(28); // basePriority + Math.ceil((60 - 25) * 0.5)
@@ -87,17 +90,17 @@ describe("Job Priority Tests", () => {
     const job_id2 = "job2";
 
     await addJobPriority(team_id, job_id1);
-    expect(getRedisConnection().expire).toHaveBeenCalledWith(
+    expect(mockRedis.expire).toHaveBeenCalledWith(
       `limit_team_id:${team_id}`,
       60
     );
 
     // Clear the mock calls
-    (getRedisConnection().expire as jest.Mock).mockClear();
+    mockRedis.expire.mockClear();
 
     // Add another job
     await addJobPriority(team_id, job_id2);
-    expect(getRedisConnection().expire).toHaveBeenCalledWith(
+    expect(mockRedis.expire).toHaveBeenCalledWith(
       `limit_team_id:${team_id}`,
       60
     );
@@ -110,7 +113,7 @@ describe("Job Priority Tests", () => {
     jest.useFakeTimers();
 
     await addJobPriority(team_id, job_id);
-    expect(getRedisConnection().expire).toHaveBeenCalledWith(
+    expect(mockRedis.expire).toHaveBeenCalledWith(
       `limit_team_id:${team_id}`,
       60
     );
@@ -119,14 +122,14 @@ describe("Job Priority Tests", () => {
     jest.advanceTimersByTime(59000);
 
     // The set should still exist
-    expect(getRedisConnection().scard).not.toHaveBeenCalled();
+    expect(mockRedis.scard).not.toHaveBeenCalled();
 
     // Fast-forward time by 2 more seconds (total 61 seconds)
     jest.advanceTimersByTime(2000);
 
     // Check if the set has been removed (scard should return 0)
-    (getRedisConnection().scard as jest.Mock).mockResolvedValue(0);
-    const setSize = await getRedisConnection().scard(`limit_team_id:${team_id}`);
+    mockRedis.scard.mockResolvedValue(0);
+    const setSize = await mockRedis.scard(`limit_team_id:${team_id}`);
     expect(setSize).toBe(0);
 
     jest.useRealTimers();
