@@ -1,3 +1,12 @@
+/**
+ * system-monitor.ts
+ *
+ * CVE-5 audit note (systeminformation — CVE-2025-68154, CVE-2026-26280, CVE-2026-26318):
+ *   Only si.mem() and si.currentLoad() are called below.
+ *   Both APIs read kernel counters and accept NO user-controlled arguments,
+ *   so the command-injection vectors in those CVEs do not apply here.
+ *   pnpm.overrides pins systeminformation >= 5.31.0 which patches all three.
+ */
 import si from 'systeminformation';
 import { Mutex } from "async-mutex";
 
