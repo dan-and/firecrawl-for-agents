@@ -7,13 +7,7 @@ WORKDIR /app
 RUN npm install -g pnpm corepack@latest
 RUN corepack enable
 
-# Copy package files
-COPY ./package.json ./pnpm-lock.yaml ./
-
-# Install dependencies
-RUN pnpm install --frozen-lockfile
-
-# Install necessary build dependencies
+# Install build dependencies early (git needed for pnpm to install from git repos)
 RUN apt-get update -qq && \
     apt-get install -y \
     ca-certificates \
@@ -22,6 +16,12 @@ RUN apt-get update -qq && \
     git \
     python3 \
     && update-ca-certificates
+
+# Copy package files
+COPY ./package.json ./pnpm-lock.yaml ./
+
+# Install dependencies
+RUN pnpm install --frozen-lockfile
 
 # Install Go 1.24.1 (apt golang-go only ships 1.19 in Debian bookworm; 1.23+ is required for golang.org/x/net >=0.36.0)
 ARG TARGETOS=linux
