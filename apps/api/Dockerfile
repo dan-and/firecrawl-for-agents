@@ -27,9 +27,10 @@ COPY . ./
 
 # Build Go module
 COPY ./src/lib/go-html-to-md/ ./src/lib/go-html-to-md/
+ARG TARGETARCH
 RUN cd src/lib/go-html-to-md && \
     go mod tidy && \
-    go build -o html-to-markdown.so -buildmode=c-shared html-to-markdown.go && \
+    GOOS=linux GOARCH=${TARGETARCH} go build -o html-to-markdown.so -buildmode=c-shared html-to-markdown.go && \
     chmod +x html-to-markdown.so
 
 # Build the application
