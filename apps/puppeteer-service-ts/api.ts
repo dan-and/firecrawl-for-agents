@@ -112,38 +112,45 @@ const scrape = async (
       try {
         switch (action.type) {
           case "wait":
-            // Wait action is supported
             await tab.waitForMillis(action.milliseconds || 0);
             console.log(`  - Waited ${action.milliseconds}ms`);
             break;
 
-          case "click":
-            // TODO: Implement click action when Hero API methods are available
-            // This is a placeholder - will be implemented when Hero API is confirmed
-            console.log(`  - Click selector "${action.selector}" (not yet implemented)`);
+          case "click": {
+            const el = tab.querySelector(action.selector);
+            await heroInstance.click(el as any);
+            console.log(`  - Clicked selector "${action.selector}"`);
             break;
+          }
 
-          case "type":
-            // TODO: Implement type action when Hero API methods are available
-            console.log(`  - Type text "${action.text}" into "${action.selector}" (not yet implemented)`);
+          case "type": {
+            const el = tab.querySelector(action.selector);
+            await heroInstance.click(el as any);
+            await heroInstance.type(action.text);
+            console.log(`  - Typed "${action.text}" into "${action.selector}"`);
             break;
+          }
 
-          case "scroll":
-            // TODO: Implement scroll action when Hero API methods are available
-            console.log(`  - Scroll ${action.direction} by ${action.amount || 500}px (not yet implemented)`);
+          case "scroll": {
+            const scrollY = action.direction === "down"
+              ? (action.amount ?? 500)
+              : -(action.amount ?? 500);
+            await heroInstance.interact({ scroll: { deltaY: scrollY } } as any);
+            console.log(`  - Scrolled ${action.direction} by ${action.amount ?? 500}px`);
             break;
+          }
 
           case "screenshot":
-            // TODO: Implement screenshot action when Hero API methods are available
-            console.log(`  - Screenshot (not yet implemented)`);
+            // Mid-flow screenshot — no-op for now (screenshots are captured after all actions complete)
+            console.log(`  - Screenshot (no-op: final screenshot captured after all actions)`);
             break;
 
           default:
-            console.warn(`Unknown action type: ${action.type}`);
+            console.warn(`Unknown action type: ${(action as any).type}`);
         }
       } catch (error) {
         console.error(`Error executing action ${action.type}:`, error);
-        // Continue with other actions even if one fails
+        // Continue with other actions rather than aborting the entire scrape
       }
     }
   }

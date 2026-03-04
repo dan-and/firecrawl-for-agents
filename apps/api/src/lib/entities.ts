@@ -19,7 +19,7 @@ export type SearchOptions = {
   location?: string;
 };
 
-export type ScrapeAction = any;
+export type ScrapeAction = import("../controllers/v1/types").ScrapeAction;
 
 export type PageOptions = {
   includeMarkdown?: boolean;
@@ -42,7 +42,7 @@ export type PageOptions = {
   disableJsDom?: boolean; // beta
   atsv?: boolean; // beta
   proxy?: "basic" | "stealth" | "enhanced";
-  actions?: any[]; // Array of action objects: { type: "click" | "type" | "wait" | "scroll" | "screenshot", ... }
+  actions?: ScrapeAction[];
   minAge?: number;
   onlyCleanContent?: boolean;
 };

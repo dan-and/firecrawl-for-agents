@@ -44,7 +44,19 @@ export const extractOptions = z
 
 export type ExtractOptions = z.infer<typeof extractOptions>;
 
-export type ScrapeAction = any;
+export const scrapeAction = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("click"), selector: z.string() }),
+  z.object({ type: z.literal("type"), selector: z.string(), text: z.string() }),
+  z.object({ type: z.literal("wait"), milliseconds: z.number().int().min(0).max(60000) }),
+  z.object({
+    type: z.literal("scroll"),
+    direction: z.enum(["up", "down"]),
+    amount: z.number().int().min(1).default(500),
+  }),
+  z.object({ type: z.literal("screenshot") }),
+]);
+
+export type ScrapeAction = z.infer<typeof scrapeAction>;
 
 export const scrapeOptions = z
   .object({
@@ -61,7 +73,7 @@ export const scrapeOptions = z
     waitFor: z.number().int().nonnegative().finite().safe().default(0),
     extract: extractOptions.optional(),
     proxy: z.enum(["basic", "stealth", "enhanced"]).optional(),
-    actions: z.array(z.any()).optional(), // Array of browser action objects
+    actions: z.array(scrapeAction).optional(),
     minAge: z.number().int().min(0).optional(),
     parsePDF: z.boolean().default(true),
     onlyCleanContent: z.boolean().default(false),

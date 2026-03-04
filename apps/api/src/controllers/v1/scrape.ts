@@ -58,6 +58,19 @@ export async function scrapeController(
   req: RequestWithAuth<{}, ScrapeResponse, ScrapeRequest>,
   res: Response<ScrapeResponse>
 ) {
+  // Guard: actions require the Hero browser service to be configured
+  if (Array.isArray(req.body?.actions) && req.body.actions.length > 0) {
+    const heroConfigured = !!process.env.PLAYWRIGHT_MICROSERVICE_URL;
+    if (!heroConfigured) {
+      return res.status(400).json({
+        success: false,
+        error:
+          "Browser actions require the Hero browser service. " +
+          "Set PLAYWRIGHT_MICROSERVICE_URL to point to a running Hero service instance.",
+      });
+    }
+  }
+
   req.body = scrapeRequestSchema.parse(req.body);
 
   const origin = req.body.origin;
