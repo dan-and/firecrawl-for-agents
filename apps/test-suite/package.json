@@ -22,7 +22,7 @@
     "@types/jest": "^29.5.12",
     "@types/supertest": "^6.0.2",
     "artillery": "^2.0.19",
-    "typescript": "^5.4.5"
+    "typescript": "^5.9.3"
   },
   "pnpm": {
     "overrides": {
