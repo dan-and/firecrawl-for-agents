@@ -471,6 +471,7 @@ export class WebScraperDataProvider {
       onlyIncludeTags: options.pageOptions?.onlyIncludeTags ?? [],
       removeTags: options.pageOptions?.removeTags ?? [],
       includeMarkdown: options.pageOptions?.includeMarkdown ?? true,
+      includeHtml: options.pageOptions?.includeHtml ?? false,
       includeRawHtml: options.pageOptions?.includeRawHtml ?? false,
       waitFor: options.pageOptions?.waitFor ?? undefined,
       headers: options.pageOptions?.headers ?? undefined,
@@ -480,6 +481,8 @@ export class WebScraperDataProvider {
       useFastMode: options.pageOptions?.useFastMode ?? false,
       disableJsDom: options.pageOptions?.disableJsDom ?? false,
       atsv: options.pageOptions?.atsv ?? false,
+      onlyMainContent: options.pageOptions?.onlyMainContent ?? false,
+      onlyCleanContent: options.pageOptions?.onlyCleanContent ?? false,
     };
     this.webhookUrls = options.webhookUrls;
     this.webhookMetadata = options.webhookMetadata;

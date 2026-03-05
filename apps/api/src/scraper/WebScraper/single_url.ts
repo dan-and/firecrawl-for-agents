@@ -6,6 +6,7 @@ import { parseMarkdown } from "../../lib/html-to-markdown";
 import { cleanContent } from "../../lib/cleanContent";
 import { urlSpecificParams } from "./utils/custom/website_params";
 import { removeUnwantedElements } from "./utils/removeUnwantedElements";
+import { extractMainContentWithReadability } from "./utils/readabilityMain";
 import { scrapeWithFetch } from "./scrapers/fetch";
 import { scrapeWithPlaywright } from "./scrapers/playwright";
 import { scrapeWithTlsClient, shutdownTlsClient } from "./scrapers/tls-client";
@@ -174,7 +175,7 @@ export async function scrapeSingleUrl(
     parsePDF: pageOptions.parsePDF ?? true,
     removeTags: pageOptions.removeTags ?? [],
     onlyIncludeTags: pageOptions.onlyIncludeTags ?? [],
-    onlyMainContent: pageOptions.onlyMainContent ?? true,
+    onlyMainContent: pageOptions.onlyMainContent ?? false,
     useFastMode: pageOptions.useFastMode ?? false,
     disableJsDom: pageOptions.disableJsDom ?? false,
     atsv: pageOptions.atsv ?? false,
@@ -233,7 +234,19 @@ export async function scrapeSingleUrl(
       }
     }
 
-    let cleanedHtml = removeUnwantedElements(scraperResponse.text, pageOptions);
+    let htmlForFiltering = scraperResponse.text;
+
+    // Use Mozilla Readability for stronger main-content extraction when
+    // onlyMainContent is requested. Falls back to the full HTML when it
+    // cannot confidently identify a main article.
+    if (pageOptions.onlyMainContent && !pageOptions.disableJsDom) {
+      const main = extractMainContentWithReadability(htmlForFiltering, url);
+      if (main && main.length > 0) {
+        htmlForFiltering = main;
+      }
+    }
+
+    let cleanedHtml = removeUnwantedElements(htmlForFiltering, pageOptions);
     // Truncate oversized HTML before conversion — never bypass conversion
     // (bypassing would leave raw HTML in the markdown field).
     const htmlForMarkdown = cleanedHtml.length > MAX_HTML_FOR_MARKDOWN

@@ -68,7 +68,7 @@ export const scrapeOptions = z
     headers: z.record(z.string(), z.string()).optional(),
     includeTags: z.string().array().optional(),
     excludeTags: z.string().array().optional(),
-    onlyMainContent: z.boolean().default(true),
+    onlyMainContent: z.boolean().default(false),
     timeout: z.number().int().positive().finite().safe().default(30000),
     waitFor: z.number().int().nonnegative().finite().safe().default(0),
     extract: extractOptions.optional(),
