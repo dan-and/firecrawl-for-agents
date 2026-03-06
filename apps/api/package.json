@@ -58,10 +58,14 @@
       "micromatch": ">=4.0.8",
       "path-to-regexp": ">=0.1.12",
       "cross-spawn": ">=7.0.5",
-      "formidable": ">=3.5.3"
+      "formidable": ">=3.5.3",
+      "@tootallnate/once": ">=3.0.0",
+      "http-proxy-agent": ">=7.0.0",
+      "https-proxy-agent": ">=7.0.0"
     }
   },
   "dependencies": {
+    "@mozilla/readability": "^0.6.0",
     "@types/express-ws": "^3.0.6",
     "@types/ws": "^8.5.12",
     "async": "^3.2.5",
@@ -77,6 +81,7 @@
     "glob": "^10.5.0",
     "ioredis": "^5.4.1",
     "joplin-turndown-plugin-gfm": "^1.0.12",
+    "jsdom": "^21.1.0",
     "koffi": "^2.9.0",
     "mammoth": "^1.11.0",
     "officeparser": "^6.0.4",
