@@ -12,7 +12,6 @@ import { crawlCancelController } from "../controllers/v1/crawl-cancel";
 import { scrapeStatusController } from "../controllers/v1/scrape-status";
 import { livenessController } from "../controllers/v1/liveness";
 import { readinessController } from "../controllers/v1/readiness";
-import expressWs from "express-ws";
 
 export function authMiddleware(
   rateLimiterMode: RateLimiterMode
@@ -57,8 +56,6 @@ function wrap(
     controller(req, res).catch((err) => next(err));
   };
 }
-
-expressWs(express());
 
 export const v1Router = express.Router();
 

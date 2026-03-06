@@ -11,7 +11,6 @@ import http from "node:http";
 import https from "node:https";
 import CacheableLookup from "cacheable-lookup";
 import { v1Router } from "./routes/v1";
-import expressWs from "express-ws";
 import { ErrorResponse, ResponseWithSentry } from "./controllers/v1/types";
 import { ZodError } from "zod";
 import { v7 as uuidv7 } from "uuid";
@@ -44,8 +43,7 @@ if (cluster.isPrimary) {
     }
   });
 } else {
-  const ws = expressWs(express());
-  const app = ws.app;
+  const app = express();
 
   global.isProduction = process.env.IS_PRODUCTION === "true";
 

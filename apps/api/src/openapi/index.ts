@@ -1,4 +1,3 @@
-import { WithWebsocketMethod } from "express-ws";
 import { Application } from "express";
 import swaggerJsdoc from "swagger-jsdoc";
 import redoc from "redoc-express";
@@ -30,7 +29,7 @@ const options = {
   apis: ["./src/controllers/v1/*.ts"],
 };
 
-export function setupOpenAPI(app: Application & WithWebsocketMethod) {
+export function setupOpenAPI(app: Application) {
   const openapiSpecification = swaggerJsdoc(options);
 
   app.get("/api-docs/openapi.json", (req, res) => {
