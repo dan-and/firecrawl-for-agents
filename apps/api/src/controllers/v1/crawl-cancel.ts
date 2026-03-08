@@ -12,7 +12,8 @@ configDotenv();
  *   delete:
  *     tags:
  *       - Crawling
- *     summary: Cancel a crawl job
+ *     summary: Cancel a running crawl job
+ *     description: Marks the crawl as cancelled. Pages already scraped remain available via GET /v1/crawl/{jobId}.
  *     security:
  *       - BearerAuth: []
  *     parameters:
@@ -21,16 +22,25 @@ configDotenv();
  *         required: true
  *         schema:
  *           type: string
+ *           format: uuid
+ *         example: "018f4e2a-1234-7000-8000-abcdef012345"
  *     responses:
  *       200:
- *         description: Success
+ *         description: Cancellation accepted
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 success:
- *                   type: boolean
+ *                 status:
+ *                   type: string
+ *                   example: "cancelled"
+ *       401:
+ *         description: Unauthorized — missing or invalid API key
+ *       404:
+ *         description: Job not found
+ *       409:
+ *         description: Job is already completed — cannot cancel
  */
 export async function crawlCancelController(req: Request, res: Response) {
   try {

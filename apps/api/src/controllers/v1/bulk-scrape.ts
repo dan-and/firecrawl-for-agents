@@ -17,6 +17,73 @@ import {
 import { getScrapeQueue } from "../../services/queue-service";
 import { getJobPriority } from "../../lib/job-priority";
 
+/**
+ * @openapi
+ * /v1/bulk/scrape:
+ *   post:
+ *     tags:
+ *       - Scraping
+ *     summary: Submit a list of URLs for bulk scraping
+ *     description: Enqueues multiple URLs as a single batch job. Poll /v1/bulk/scrape/{id} for results.
+ *     security:
+ *       - BearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - urls
+ *             properties:
+ *               urls:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: uri
+ *                 example: ["https://example.com", "https://example.org"]
+ *               waitUntil:
+ *                 type: string
+ *                 enum: ['load', 'domcontentloaded', 'networkidle0', 'networkidle2']
+ *               timeout:
+ *                 type: integer
+ *                 minimum: 1000
+ *                 example: 30000
+ *     responses:
+ *       200:
+ *         description: Bulk scrape job accepted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 id:
+ *                   type: string
+ *                   format: uuid
+ *                   example: "018f4e2a-1234-7000-8000-abcdef012345"
+ *                 url:
+ *                   type: string
+ *                   format: uri
+ *                   example: "http://localhost:3002/v1/bulk/scrape/018f4e2a-1234-7000-8000-abcdef012345"
+ *       400:
+ *         description: No valid URLs provided
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 error:
+ *                   type: string
+ *                   example: "No valid URLs provided after filtering"
+ *       401:
+ *         description: Unauthorized — missing or invalid API key
+ */
 export async function bulkScrapeController(
   req: RequestWithAuth<{}, CrawlResponse, BulkScrapeRequest>,
   res: Response<CrawlResponse>
@@ -27,7 +94,7 @@ export async function bulkScrapeController(
 
   // await logCrawl(id, req.auth.team_id);
 
-  // Credit checking not available in firecrawl-simple
+  // Credit checking not available in firecrawl-for-agents
   // let { remainingCredits } = req.account;
   // const useDbAuthentication = process.env.USE_DB_AUTHENTICATION === 'true';
   // if(!useDbAuthentication){

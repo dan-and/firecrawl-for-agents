@@ -21,6 +21,7 @@ import { PlanType } from "../../types";
  *     tags:
  *       - Scraping
  *     summary: Scrape a single webpage
+ *     description: Fetches and converts a single URL to Markdown. Supports plain HTTP fetch, CycleTLS (anti-bot), and Hero browser engine as automatic fallback tiers.
  *     security:
  *       - BearerAuth: []
  *     requestBody:
@@ -35,15 +36,27 @@ import { PlanType } from "../../types";
  *               url:
  *                 type: string
  *                 format: uri
+ *                 example: "https://example.com"
  *               waitUntil:
  *                 type: string
  *                 enum: ['load', 'domcontentloaded', 'networkidle0', 'networkidle2']
+ *                 description: Browser wait condition (only applies when Hero engine is used)
  *               timeout:
  *                 type: integer
  *                 minimum: 1000
+ *                 example: 30000
+ *                 description: Request timeout in milliseconds
+ *               parsePDF:
+ *                 type: boolean
+ *                 default: true
+ *                 description: Extract text from PDF URLs
+ *               proxy:
+ *                 type: string
+ *                 enum: ['fetch', 'cycletls', 'playwright']
+ *                 description: Force a specific scraping engine (fetch=plain HTTP, cycletls=anti-bot, playwright=Hero browser)
  *     responses:
  *       200:
- *         description: Success
+ *         description: Page scraped successfully
  *         content:
  *           application/json:
  *             schema:
@@ -51,7 +64,54 @@ import { PlanType } from "../../types";
  *               properties:
  *                 success:
  *                   type: boolean
- *                 jobId:
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     markdown:
+ *                       type: string
+ *                       description: Page content converted to Markdown
+ *                     html:
+ *                       type: string
+ *                       description: Raw HTML of the page
+ *                     metadata:
+ *                       type: object
+ *                       properties:
+ *                         title:
+ *                           type: string
+ *                         description:
+ *                           type: string
+ *                         statusCode:
+ *                           type: integer
+ *                           example: 200
+ *                         url:
+ *                           type: string
+ *                           format: uri
+ *       400:
+ *         description: Bad request — invalid URL or missing required field
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 error:
+ *                   type: string
+ *       401:
+ *         description: Unauthorized — missing or invalid API key
+ *       500:
+ *         description: Scrape failed — all engine tiers exhausted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 error:
  *                   type: string
  */
 export async function scrapeController(

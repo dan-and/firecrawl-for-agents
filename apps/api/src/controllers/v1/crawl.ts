@@ -28,7 +28,8 @@ import { getJobPriority } from "../../lib/job-priority";
  *   post:
  *     tags:
  *       - Crawling
- *     summary: Start a new web crawling job
+ *     summary: Start a recursive web crawl
+ *     description: Starts a crawl job that follows links from the seed URL up to maxDepth levels deep. Poll /v1/crawl/{id} for status and results.
  *     security:
  *       - BearerAuth: []
  *     requestBody:
@@ -43,24 +44,30 @@ import { getJobPriority } from "../../lib/job-priority";
  *               url:
  *                 type: string
  *                 format: uri
+ *                 example: "https://example.com"
  *               maxDepth:
  *                 type: integer
  *                 minimum: 1
  *                 default: 2
+ *                 description: Maximum link-follow depth from the seed URL
  *               maxPages:
  *                 type: integer
  *                 minimum: 1
+ *                 description: Hard cap on total pages crawled
  *               timeout:
  *                 type: integer
  *                 minimum: 1000
+ *                 example: 30000
  *               includeUrls:
  *                 type: array
  *                 items:
  *                   type: string
+ *                 description: URL glob patterns to include (default — all)
  *               excludeUrls:
  *                 type: array
  *                 items:
  *                   type: string
+ *                 description: URL glob patterns to exclude
  *               scrapeOptions:
  *                 type: object
  *                 properties:
@@ -71,7 +78,7 @@ import { getJobPriority } from "../../lib/job-priority";
  *                     type: integer
  *     responses:
  *       200:
- *         description: Success
+ *         description: Crawl job accepted
  *         content:
  *           application/json:
  *             schema:
@@ -79,12 +86,29 @@ import { getJobPriority } from "../../lib/job-priority";
  *               properties:
  *                 success:
  *                   type: boolean
+ *                   example: true
  *                 id:
  *                   type: string
  *                   format: uuid
+ *                   example: "018f4e2a-1234-7000-8000-abcdef012345"
  *                 url:
  *                   type: string
  *                   format: uri
+ *                   example: "http://localhost:3002/v1/crawl/018f4e2a-1234-7000-8000-abcdef012345"
+ *       400:
+ *         description: Bad request — invalid URL or body
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 error:
+ *                   type: string
+ *       401:
+ *         description: Unauthorized — missing or invalid API key
  */
 export async function crawlController(
   req: RequestWithAuth<{}, CrawlResponse, CrawlRequest>,

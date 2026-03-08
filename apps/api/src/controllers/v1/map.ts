@@ -24,7 +24,8 @@ configDotenv();
  *   post:
  *     tags:
  *       - Mapping
- *     summary: Generate sitemap
+ *     summary: Discover all URLs on a site
+ *     description: Crawls sitemaps and follows links to return a flat list of all discovered URLs. Fast — does not scrape page content.
  *     security:
  *       - BearerAuth: []
  *     requestBody:
@@ -39,9 +40,22 @@ configDotenv();
  *               url:
  *                 type: string
  *                 format: uri
+ *                 example: "https://example.com"
+ *               limit:
+ *                 type: integer
+ *                 default: 5000
+ *                 description: Maximum number of URLs to return
+ *               ignoreCache:
+ *                 type: boolean
+ *                 default: false
+ *                 description: Bypass cached URL list and re-crawl
+ *               includeSubdomains:
+ *                 type: boolean
+ *                 default: false
+ *                 description: Include URLs from subdomains
  *     responses:
  *       200:
- *         description: Success
+ *         description: List of discovered URLs
  *         content:
  *           application/json:
  *             schema:
@@ -49,10 +63,27 @@ configDotenv();
  *               properties:
  *                 success:
  *                   type: boolean
- *                 urls:
+ *                   example: true
+ *                 links:
  *                   type: array
  *                   items:
  *                     type: string
+ *                     format: uri
+ *                   example: ["https://example.com/", "https://example.com/about"]
+ *       400:
+ *         description: Bad request — invalid URL
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 error:
+ *                   type: string
+ *       401:
+ *         description: Unauthorized — missing or invalid API key
  */
 export async function mapController(
   req: RequestWithAuth<{}, MapResponse, MapRequest>,

@@ -11,7 +11,8 @@ configDotenv();
  *   get:
  *     tags:
  *       - Crawling
- *     summary: Get crawl job status
+ *     summary: Get crawl job status and results
+ *     description: Returns current status plus all pages scraped so far. Poll until status is "completed" or "failed".
  *     security:
  *       - BearerAuth: []
  *     parameters:
@@ -20,26 +21,52 @@ configDotenv();
  *         required: true
  *         schema:
  *           type: string
+ *           format: uuid
+ *         example: "018f4e2a-1234-7000-8000-abcdef012345"
  *     responses:
  *       200:
- *         description: Success
+ *         description: Job status and collected pages
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
  *                 status:
  *                   type: string
- *                   enum: [completed, failed, in_progress]
- *                 pages:
+ *                   enum: [completed, failed, scraping]
+ *                   example: "completed"
+ *                 total:
+ *                   type: integer
+ *                   description: Total pages discovered
+ *                 completed:
+ *                   type: integer
+ *                   description: Pages successfully scraped so far
+ *                 expiresAt:
+ *                   type: string
+ *                   format: date-time
+ *                 data:
  *                   type: array
  *                   items:
  *                     type: object
  *                     properties:
- *                       url:
+ *                       markdown:
  *                         type: string
- *                       content:
- *                         type: string
+ *                       metadata:
+ *                         type: object
+ *                         properties:
+ *                           url:
+ *                             type: string
+ *                           statusCode:
+ *                             type: integer
+ *       401:
+ *         description: Unauthorized — missing or invalid API key
+ *       403:
+ *         description: Forbidden — job belongs to a different team
+ *       404:
+ *         description: Job not found
  */
 export async function getJob(id: string) {
   const job = await getScrapeQueue().getJob(id);

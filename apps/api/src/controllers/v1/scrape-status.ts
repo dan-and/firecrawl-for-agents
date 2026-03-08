@@ -6,26 +6,29 @@ import { scrapeStatusRateLimiter } from "../../services/rate-limiter";
  *   get:
  *     tags:
  *       - Scraping
- *     summary: Get scrape job status
+ *     summary: Get scrape job status (legacy polling endpoint)
  *     parameters:
  *       - name: jobId
  *         in: path
  *         required: true
  *         schema:
  *           type: string
+ *           format: uuid
  *     responses:
  *       200:
- *         description: Success
+ *         description: Job status
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 status:
- *                   type: string
- *                   enum: [completed, failed, in_progress]
- *                 content:
- *                   type: string
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   nullable: true
+ *       429:
+ *         description: Rate limit exceeded
  */
 export async function scrapeStatusController(req: any, res: any) {
   try {
