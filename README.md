@@ -1,6 +1,6 @@
-# ➖ Firecrawl Simple
+# Firecrawl for Agents
 
-Crawl and convert any website into LLM-ready markdown.
+Crawl and scrape websites into LLM-ready markdown (and HTML, PDF, documents). Built for AI agents, RAG pipelines, and self-hosted integrations.
 
 ## ![](https://trieve.b-cdn.net/firecrawl-simple/loc_chart.png)
 
@@ -11,15 +11,15 @@ Crawl and convert any website into LLM-ready markdown.
     <a href="https://discord.gg/CuJVfgZf54"><img src="https://img.shields.io/discord/1130153053056684123.svg?style=flat&amp;logo=discord&amp;logoColor=white" alt="Join our Discord"></a></p>
 </div>
 
-## What is Firecrawl Simple?
+## What is Firecrawl for Agents?
 
-Firecrawl Simple is a stripped down and stable version of firecrawl optimized for self-hosting and ease of contribution. Billing logic and AI features are completely removed.
+Firecrawl for Agents is a stripped-down, self-hostable fork of Firecrawl focused on scraping and crawling for AI agents and automation. Billing and AI features are removed; you get a stable API for `/scrape` and `/crawl` that returns markdown, HTML, and document extractions.
 
 `playwright` is replaced with [hero](https://github.com/ulixee/hero) such that `fire-engine` and `scrapingbee` are not required for guarded pages.
 
-Only the v1 `/scrape`, `/crawl/{id}`, and `/crawl` routes are supprted in firecrawl simple, see the [openapi spec here](/apps/api/v1-openapi.json). Also, `creditsUsed` has been removed from the API response on the `/crawl/{id}` route.
+Only the v1 `/scrape`, `/crawl/{id}`, and `/crawl` routes are supported; see the [openapi spec here](/apps/api/v1-openapi.json). Also, `creditsUsed` has been removed from the API response on the `/crawl/{id}` route.
 
-Posthog, supabase, stripe, langchain, logsnag, sentry, bullboard, and [several other deps from the package.json](https://github.com/mendableai/firecrawl/compare/main...devflowinc:firecrawl-simple:main#diff-2c40985d6d91eed8ae85ec1c8e754a85984ee32e156a600d2b7a467423d7e338) are removed.
+Posthog, supabase, stripe, langchain, logsnag, sentry, bullboard, and [several other deps from the package.json](https://github.com/mendableai/firecrawl/compare/main...devflowinc:firecrawl-for-agents:main#diff-2c40985d6d91eed8ae85ec1c8e754a85984ee32e156a600d2b7a467423d7e338) are removed.
 
 ## Contributing
 
@@ -40,9 +40,9 @@ Fire-engine, Firecrawl's solution for anti-bot pages, being closed source is the
 You should add the following services to your docker-compose as follows. We trust that you can configure Kubernetes or other hosting solutions to run these services.
 
 ```yaml
-name: firecrawl
+name: firecrawl-for-agents
 services:
-  # Firecrawl services
+  # Firecrawl for Agents services
   playwright-service:
     image: trieve/puppeteer-service-ts:v0.0.6
     environment:
@@ -57,7 +57,7 @@ services:
       - backend
 
   firecrawl-api:
-    image: trieve/firecrawl:v0.0.46
+    image: trieve/firecrawl-for-agents:v0.0.46
     networks:
       - backend
     environment:
@@ -82,7 +82,7 @@ services:
     command: ["pnpm", "run", "start:production"]
 
   firecrawl-worker:
-    image: trieve/firecrawl:v0.0.46
+    image: trieve/firecrawl-for-agents:v0.0.46
     networks:
       - backend
     environment:
@@ -131,7 +131,7 @@ Firecrawl simple works as follows:
 
 ### Scraper Technologies
 
-Firecrawl Simple uses a three-tier scraping fallback system to maximize success rate while minimizing resource usage:
+Firecrawl for Agents uses a three-tier scraping fallback system to maximize success rate while minimizing resource usage:
 
 | Scraper Name | Technology | Description | When Used |
 |---------------|------------|-------------|------------|

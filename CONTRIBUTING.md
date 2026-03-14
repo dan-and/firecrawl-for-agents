@@ -1,6 +1,6 @@
-# Contributors guide:
+# Contributors guide
 
-Welcome to [Firecrawl](https://firecrawl.dev) 🔥! Here are some instructions on how to get the project locally, so you can run it on your own (and contribute)
+Welcome to **Firecrawl for Agents**. Here are some instructions on how to get the project locally, so you can run it on your own (and contribute).
 
 If you're contributing, note that the process is similar to other open source repos i.e. (fork firecrawl, make changes, run tests, PR). If you have any questions, and would like help gettin on board, reach out to hello@mendable.ai for more or submit an issue!
 

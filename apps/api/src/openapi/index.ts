@@ -10,6 +10,7 @@ const options = {
     info: {
       title: "Firecrawl API",
       description:
+        "This documentation (at `/docs`) describes the API under the `/v1` prefix. All endpoints live under the path `/v1` (e.g. `POST /v1/scrape`, `GET /v1/crawl/{id}`). Send requests to `/v1/...`; this interactive docs UI is served at `/docs`.\n\n" +
         "Self-hostable web scraping and crawling API.\n\n" +
         "**Core:** Single-page scrape, bulk scrape (list of URLs), recursive crawl (follow links with maxDepth/maxPages), and site mapping (discover URLs without scraping content).\n\n" +
         "**Document formats → HTML/Markdown:** PDF (text extraction via unpdf), Word (DOCX via mammoth, legacy .doc via word-extractor), spreadsheets (XLSX, XLS, ODS via SheetJS → HTML tables), and office/presentations (PPTX, ODT, ODP, RTF via officeparser). All are converted to HTML then to Markdown in the same pipeline as web pages.\n\n" +

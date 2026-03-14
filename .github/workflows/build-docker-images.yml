@@ -26,7 +26,7 @@ jobs:
           push: false
           platforms: linux/amd64,linux/arm64
           # load: true is intentionally omitted — incompatible with multi-platform builds
-          tags: trieve/firecrawl:pr-${{ github.event.number }}
+          tags: trieve/firecrawl-for-agents:pr-${{ github.event.number }}
           build-args: |
             PORT=8080
 

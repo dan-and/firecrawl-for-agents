@@ -1,4 +1,4 @@
-name: firecrawl
+name: firecrawl-for-agents-dev
 
 x-common-service: &common-service
   build: apps/api
@@ -12,7 +12,7 @@ x-common-service: &common-service
   environment:
     - REDIS_URL=${REDIS_URL:-redis://redis:6379}
     - REDIS_RATE_LIMIT_URL=${REDIS_URL:-redis://redis:6379}
-    - PLAYWRIGHT_MICROSERVICE_URL=${PLAYWRIGHT_MICROSERVICE_URL:-http://playwright-service:3000}
+    - PLAYWRIGHT_MICROSERVICE_URL=${PLAYWRIGHT_MICROSERVICE_URL:-http://puppeteer-service:3000}
     - TLS_CLIENT_ENABLED=${TLS_CLIENT_ENABLED:-true}
     - PORT=${PORT:-3002}
     - NUM_WORKERS_PER_QUEUE=${NUM_WORKERS_PER_QUEUE}
@@ -55,13 +55,12 @@ services:
     labels:
       - traefik.enable=true
       - traefik.docker.network=docker-proxynet
-      - traefik.http.routers.firecrawl.rule=Host(`${SUBDOMAIN}.${DOMAIN_NAME}`)
-      - traefik.http.routers.firecrawl.tls=true
-      - traefik.http.routers.firecrawl.entrypoints=web,web-secure
-      - traefik.http.routers.firecrawl.tls.certresolver=tlschallenge
-      - traefik.http.services.firecrawl.loadbalancer.server.port=3002
-      - traefik.http.routers.firecrawl.middlewares=secHeaders@file
-     
+      - traefik.http.routers.firecrawl-for-agents-dev.rule=Host(`${SUBDOMAIN}.${DOMAIN_NAME}`)
+      - traefik.http.routers.firecrawl-for-agents-dev.tls=true
+      - traefik.http.routers.firecrawl-for-agents-dev.entrypoints=web,web-secure
+      - traefik.http.routers.firecrawl-for-agents-dev.tls.certresolver=tlschallenge
+      - traefik.http.services.firecrawl-for-agents-dev.loadbalancer.server.port=3002
+      - traefik.http.routers.firecrawl-for-agents-dev.middlewares=secHeaders@file
 
     depends_on:
       - redis

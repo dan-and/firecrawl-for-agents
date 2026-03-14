@@ -1,8 +1,8 @@
-# Self-hosting Firecrawl
+# Self-hosting Firecrawl for Agents
 
 #### Contributor?
 
-Welcome to [Firecrawl](https://firecrawl.dev) 🔥! Here are some instructions on how to get the project locally so you can run it on your own and contribute.
+Welcome to **Firecrawl for Agents** (a self-hostable fork of [Firecrawl](https://firecrawl.dev)). Here are some instructions on how to get the project locally so you can run it on your own and contribute.
 
 If you're contributing, note that the process is similar to other open-source repos, i.e., fork Firecrawl, make changes, run tests, PR.
 
