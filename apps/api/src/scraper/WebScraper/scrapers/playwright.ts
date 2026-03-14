@@ -62,13 +62,39 @@ export async function scrapeWithPlaywright(
     html: "",
     startTime: Date.now(),
   };
+  let microserviceUrl: string | undefined;
 
   try {
+    const raw = process.env.PLAYWRIGHT_MICROSERVICE_URL?.trim() ?? "";
+    const baseUrl =
+      raw && !/^https?:\/\//i.test(raw) ? `http://${raw}` : raw;
+    if (!baseUrl) {
+      return {
+        content: "",
+        pageStatusCode: null,
+        pageError: "PLAYWRIGHT_MICROSERVICE_URL is not set",
+      };
+    }
+    const base = baseUrl.replace(/\/+$/, "");
+    const urlWithPath = base.endsWith("/scrape") ? base : `${base}/scrape`;
+    try {
+      microserviceUrl = new URL(urlWithPath).href;
+    } catch (urlError) {
+      Logger.debug(
+        `⛏️ Playwright: Invalid PLAYWRIGHT_MICROSERVICE_URL (${baseUrl}), cannot call Hero`
+      );
+      return {
+        content: "",
+        pageStatusCode: null,
+        pageError: `PLAYWRIGHT_MICROSERVICE_URL is not a valid URL: ${baseUrl}`,
+      };
+    }
+
     const reqParams = await generateRequestParams(url);
     const waitParam = reqParams["params"]?.wait ?? waitFor;
 
     const response = await axios.post(
-      process.env.PLAYWRIGHT_MICROSERVICE_URL,
+      microserviceUrl,
       {
         url: url,
         wait_after_load: waitParam,
@@ -87,7 +113,7 @@ export async function scrapeWithPlaywright(
 
     if (response.status !== 200) {
       Logger.debug(
-        `⛏️ Playwright: Failed to fetch url: ${url} | status: ${response.status}, error: ${response.data?.pageError}`
+        `⛏️ Playwright: Failed to fetch url: ${url} | status: ${response.status}, microservice: ${microserviceUrl}, error: ${response.data?.pageError}`
       );
       logParams.error_message = response.data?.pageError;
       logParams.response_code = response.data?.pageStatusCode;
@@ -141,8 +167,12 @@ export async function scrapeWithPlaywright(
       Logger.debug(`⛏️ Playwright: Request timed out for ${url}`);
     } else {
       logParams.error_message = error.message || error;
+      const microserviceHint =
+        typeof microserviceUrl !== "undefined"
+          ? ` microservice: ${microserviceUrl}`
+          : "";
       Logger.debug(
-        `⛏️ Playwright: Failed to fetch url: ${url} | Error: ${error}`
+        `⛏️ Playwright: Failed to fetch url: ${url} | Error: ${error}${microserviceHint}`
       );
     }
     return {

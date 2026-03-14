@@ -483,6 +483,7 @@ export class WebScraperDataProvider {
       atsv: options.pageOptions?.atsv ?? false,
       onlyMainContent: options.pageOptions?.onlyMainContent ?? false,
       onlyCleanContent: options.pageOptions?.onlyCleanContent ?? false,
+      proxy: options.pageOptions?.proxy ?? undefined,
     };
     this.webhookUrls = options.webhookUrls;
     this.webhookMetadata = options.webhookMetadata;

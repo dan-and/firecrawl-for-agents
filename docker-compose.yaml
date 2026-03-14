@@ -12,7 +12,8 @@ x-common-service: &common-service
   environment:
     - REDIS_URL=${REDIS_URL:-redis://redis:6379}
     - REDIS_RATE_LIMIT_URL=${REDIS_URL:-redis://redis:6379}
-    - PLAYWRIGHT_MICROSERVICE_URL=${PLAYWRIGHT_MICROSERVICE_URL:-http://puppeteer-service:3000}
+    # Full URL to Hero scrape endpoint. Required for proxy=stealth/enhanced.
+    - PLAYWRIGHT_MICROSERVICE_URL=${PLAYWRIGHT_MICROSERVICE_URL:-http://puppeteer-service:3000/scrape}
     - TLS_CLIENT_ENABLED=${TLS_CLIENT_ENABLED:-true}
     - PORT=${PORT:-3002}
     - NUM_WORKERS_PER_QUEUE=${NUM_WORKERS_PER_QUEUE}
