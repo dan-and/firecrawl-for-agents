@@ -5,6 +5,7 @@ jest.mock("cycletls", () => ({
   default: jest.fn().mockResolvedValue(mockCycleTLSCaller),
 }));
 
+import * as zlib from "zlib";
 import { scrapeWithTlsClient } from "../tls-client";
 
 beforeEach(() => {
@@ -74,6 +75,55 @@ describe("scrapeWithTlsClient", () => {
 
     expect(result.content).toBe("");
     expect(result.pageError).toBeDefined();
+  });
+
+  it("decompresses gzip body when Content-Encoding: gzip is present", async () => {
+    const html = "<html><body><h1>Heise</h1></body></html>";
+    const gzipBody = zlib.gzipSync(Buffer.from(html, "utf8"));
+
+    mockCycleTLSCaller.mockResolvedValueOnce({
+      status: 200,
+      data: gzipBody,
+      headers: { "content-encoding": "gzip" },
+    });
+
+    const result = await scrapeWithTlsClient("https://heise.de/newsticker");
+
+    expect(result.pageStatusCode).toBe(200);
+    expect(result.content).toContain("Heise");
+    expect(result.content).not.toMatch(/\u001f\u0008/);
+    expect(result.pageError).toBeNull();
+  });
+
+  it("decompresses body when data starts with gzip magic and no Content-Encoding header", async () => {
+    const html = "<html><body>Magic gzip</body></html>";
+    const gzipBody = zlib.gzipSync(Buffer.from(html, "utf8"));
+
+    mockCycleTLSCaller.mockResolvedValueOnce({
+      status: 200,
+      data: gzipBody,
+      headers: {},
+    });
+
+    const result = await scrapeWithTlsClient("https://example.com");
+
+    expect(result.pageStatusCode).toBe(200);
+    expect(result.content).toContain("Magic gzip");
+    expect(result.pageError).toBeNull();
+  });
+
+  it("returns plain HTML as-is when no compression", async () => {
+    const html = "<html><body>Plain</body></html>";
+    mockCycleTLSCaller.mockResolvedValueOnce({
+      status: 200,
+      data: html,
+      headers: {},
+    });
+
+    const result = await scrapeWithTlsClient("https://example.com");
+
+    expect(result.content).toBe(html);
+    expect(result.pageError).toBeNull();
   });
 });
 
