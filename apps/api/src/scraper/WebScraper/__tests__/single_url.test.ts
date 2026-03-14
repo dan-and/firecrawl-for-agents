@@ -1,4 +1,4 @@
-import { scrapeSingleUrl } from "../single_url";
+import { scrapeSingleUrl, assertHeroConfiguredWhenRequested } from "../single_url";
 import * as fetchModule from "../scrapers/fetch";
 
 jest.mock("../scrapers/fetch");
@@ -206,5 +206,71 @@ describe("scrapeSingleUrl — format field isolation", () => {
     expect(result.html).not.toContain("<style>");
     // and html must be smaller (noise removed)
     expect((result.html || "").length).toBeLessThan((result.rawHtml || "").length);
+  });
+});
+
+describe("assertHeroConfiguredWhenRequested — proxy (Hero) requested but not configured", () => {
+  it("throws clear error when proxy is stealth, playwright first, and PLAYWRIGHT_MICROSERVICE_URL is unset", () => {
+    const orig = process.env.PLAYWRIGHT_MICROSERVICE_URL;
+    delete process.env.PLAYWRIGHT_MICROSERVICE_URL;
+    try {
+      expect(() =>
+        assertHeroConfiguredWhenRequested(
+          { proxy: "stealth" },
+          ["playwright", "fetch", "tls-client"]
+        )
+      ).toThrow(/Hero service is not configured/);
+      expect(() =>
+        assertHeroConfiguredWhenRequested(
+          { proxy: "stealth" },
+          ["playwright", "fetch", "tls-client"]
+        )
+      ).toThrow(/PLAYWRIGHT_MICROSERVICE_URL/);
+    } finally {
+      if (orig !== undefined) process.env.PLAYWRIGHT_MICROSERVICE_URL = orig;
+    }
+  });
+
+  it("throws clear error when proxy is enhanced, playwright first, and PLAYWRIGHT_MICROSERVICE_URL is unset", () => {
+    const orig = process.env.PLAYWRIGHT_MICROSERVICE_URL;
+    delete process.env.PLAYWRIGHT_MICROSERVICE_URL;
+    try {
+      expect(() =>
+        assertHeroConfiguredWhenRequested(
+          { proxy: "enhanced" },
+          ["playwright", "fetch"]
+        )
+      ).toThrow(/Hero service is not configured/);
+    } finally {
+      if (orig !== undefined) process.env.PLAYWRIGHT_MICROSERVICE_URL = orig;
+    }
+  });
+
+  it("does not throw when PLAYWRIGHT_MICROSERVICE_URL is set", () => {
+    process.env.PLAYWRIGHT_MICROSERVICE_URL = "http://hero:3000";
+    try {
+      expect(() =>
+        assertHeroConfiguredWhenRequested(
+          { proxy: "stealth" },
+          ["playwright", "fetch"]
+        )
+      ).not.toThrow();
+    } finally {
+      delete process.env.PLAYWRIGHT_MICROSERVICE_URL;
+    }
+  });
+
+  it("does not throw when proxy is basic (fetch first)", () => {
+    delete process.env.PLAYWRIGHT_MICROSERVICE_URL;
+    try {
+      expect(() =>
+        assertHeroConfiguredWhenRequested(
+          { proxy: "basic" },
+          ["fetch", "tls-client", "playwright"]
+        )
+      ).not.toThrow();
+    } finally {
+      delete process.env.PLAYWRIGHT_MICROSERVICE_URL;
+    }
   });
 });

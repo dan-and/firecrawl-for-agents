@@ -113,6 +113,28 @@ export async function generateRequestParams(
 }
 
 /**
+ * Throws if the caller requested Hero (proxy stealth/enhanced) but the Hero service is not configured.
+ * Used to fail fast with a clear message instead of silently skipping playwright and then "No page found".
+ */
+export function assertHeroConfiguredWhenRequested(
+  pageOptions: PageOptions,
+  scrapersInOrder: (typeof baseScrapers)[number][]
+): void {
+  const requestedHero =
+    pageOptions.proxy === "stealth" || pageOptions.proxy === "enhanced";
+  if (
+    requestedHero &&
+    scrapersInOrder[0] === "playwright" &&
+    !process.env.PLAYWRIGHT_MICROSERVICE_URL
+  ) {
+    throw new Error(
+      "Browser engine (proxy: stealth/enhanced) was requested but the Hero service is not configured. " +
+        "Set PLAYWRIGHT_MICROSERVICE_URL in the worker environment and ensure the Hero (playwright-service) container is running."
+    );
+  }
+}
+
+/**
  * Get the order of scrapers to be used for scraping a URL
  * If the user doesn't have envs set for a specific scraper, it will be removed from the order.
  * @param defaultScraper The default scraper to use if the URL does not have a specific scraper order defined
@@ -179,6 +201,7 @@ export async function scrapeSingleUrl(
     useFastMode: pageOptions.useFastMode ?? false,
     disableJsDom: pageOptions.disableJsDom ?? false,
     atsv: pageOptions.atsv ?? false,
+    proxy: pageOptions.proxy ?? undefined,
   };
 
   if (!existingHtml) {
@@ -202,7 +225,7 @@ export async function scrapeSingleUrl(
       metadata: { pageStatusCode?: number; pageError?: string | null };
     } = { text: "", screenshot: "", metadata: {} };
 
-    console.log("DEBUG attemptScraping called with method:", method);
+    Logger.debug(`⛏️ attemptScraping: engine=${method}`);
     switch (method) {
        case "playwright":
          if (process.env.PLAYWRIGHT_MICROSERVICE_URL) {
@@ -225,7 +248,7 @@ export async function scrapeSingleUrl(
         break;
       }
       case "fetch": {
-        console.log("DEBUG single_url: about to call scrapeWithFetch");
+        Logger.debug(`⛏️ fetch: calling scrapeWithFetch for ${url}`);
         const response = await scrapeWithFetch(url, pageOptions.parsePDF ?? true);
         scraperResponse.text = response.content;
         scraperResponse.metadata.pageStatusCode = response.pageStatusCode;
@@ -298,6 +321,12 @@ export async function scrapeSingleUrl(
     const forcedEngine = getForcedEngine(urlToScrape);
     const scrapersInOrder = getScrapingFallbackOrder(defaultScraper, forcedEngine);
 
+    Logger.info(
+      `⛏️ Scraper order for ${urlToScrape}: ${scrapersInOrder.join(" → ")}`
+    );
+
+    assertHeroConfiguredWhenRequested(pageOptions, scrapersInOrder);
+
     for (const scraper of scrapersInOrder) {
       // If exists text coming from crawler, use it
       if (
@@ -324,6 +353,7 @@ export async function scrapeSingleUrl(
       text = attempt.text ?? "";
       html = attempt.html ?? "";
       rawHtml = attempt.rawHtml ?? "";
+      if (typeof rawHtml !== "string") rawHtml = String(rawHtml);
       screenshot = attempt.screenshot ?? "";
 
       if (attempt.pageStatusCode) {
@@ -340,7 +370,7 @@ export async function scrapeSingleUrl(
       }
 
       if (
-        (rawHtml && rawHtml.trim().length >= 100) ||
+        (typeof rawHtml === "string" && rawHtml.trim().length >= 100) ||
         (typeof screenshot === "string" && screenshot.length > 0)
       ) {
         Logger.debug(
@@ -395,6 +425,7 @@ export async function scrapeSingleUrl(
       );
     }
 
+    if (typeof rawHtml !== "string") rawHtml = String(rawHtml);
     const soup = cheerio.load(rawHtml);
     const metadata = extractMetadata(soup, urlToScrape);
 
